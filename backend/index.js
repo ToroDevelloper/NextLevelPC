@@ -40,12 +40,19 @@ const allowedOrigins = [
     process.env.FRONTEND_URL // URL de producción en Netlify
 ].filter(Boolean);
 
+console.log('Orígenes permitidos:', allowedOrigins);
+
 app.use(cors({
     origin: function (origin, callback) {
         // Permitir peticiones sin origen (como apps móviles o curl)
         if (!origin) return callback(null, true);
+        
         if (allowedOrigins.indexOf(origin) === -1) {
-            const msg = 'La política CORS para este sitio no permite el acceso desde el origen especificado.';
+            console.log('Origen bloqueado por CORS:', origin);
+            // En desarrollo o si FRONTEND_URL no está definido, permitir temporalmente para depuración
+            // return callback(null, true); // Descomentar para permitir todo (INSEGURO)
+            
+            const msg = `La política CORS para este sitio no permite el acceso desde el origen especificado: ${origin}`;
             return callback(new Error(msg), false);
         }
         return callback(null, true);

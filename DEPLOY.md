@@ -90,3 +90,20 @@ Esto es crucial para que la política **CORS** del backend permita las peticione
 *   **Estructura de Carpetas:**
     *   `backend/`: Código del servidor.
     *   `fronted/`: Código del cliente (React).
+
+---
+
+## Solución de Problemas Comunes
+
+### 1. Error "Cannot find module" (Case Sensitivity)
+Si ves errores como `Error: Cannot find module '../controllers/servicioController'`, es probable que el nombre del archivo en el código no coincida exactamente con el nombre del archivo en el sistema (mayúsculas/minúsculas).
+*   **Solución:** Verifica que los `require` coincidan exactamente con el nombre del archivo. Ejemplo: `require('../controllers/ServicioController')` si el archivo es `ServicioController.js`.
+
+### 2. Error de CORS
+Si el frontend no puede conectarse al backend y ves errores de CORS en la consola del navegador o logs del servidor:
+*   **Solución:** Asegúrate de haber añadido la variable de entorno `FRONTEND_URL` en Render con la URL exacta de tu sitio en Netlify (sin barra al final, ej. `https://mi-sitio.netlify.app`).
+*   Revisa los logs de Render, hemos añadido mensajes para mostrar qué origen está siendo bloqueado.
+
+### 3. Base de Datos
+Si el backend inicia pero falla al conectar a la DB:
+*   **Solución:** Verifica las credenciales en las variables de entorno de Render (`DB_HOST`, `DB_USER`, etc.). Asegúrate de que tu proveedor de base de datos permita conexiones externas.
