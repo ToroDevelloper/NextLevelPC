@@ -1,0 +1,308 @@
+.servicios-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+}
+
+.servicios-title {
+    text-align: center;
+    font-size: 2.5rem;
+    margin-bottom: 3rem;
+    color: #1f2937;
+    font-weight: 700;
+}
+
+.servicios-subtitle {
+    text-align: center;
+    margin-bottom: 2rem;
+    font-size: 1.75rem;
+    color: #374151;
+}
+
+/* Filtros - MANTENIENDO ESTILO ORIGINAL PERO MEJORADO */
+.servicios-filtros {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+    margin-bottom: 3rem;
+    max-width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+}
+/**/
+.filtro-card {
+    position: relative;
+    height: 300px;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border: 2px solid transparent;
+}
+
+.filtro-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.filtro-card.active {
+    border-color: #3b82f6;
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+}
+
+.filtro-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.filtro-card:hover img {
+    transform: scale(1.05);
+}
+
+.filtro-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 60%);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 2rem;
+    transition: all 0.3s ease;
+}
+
+.filtro-card:hover .filtro-overlay {
+    background: linear-gradient(to top, #3b6f7a 0%, rgba(59, 111, 122, 0.3) 60%);
+}
+
+.filtro-card.active .filtro-overlay {
+    background: linear-gradient(to top, #3b6f7a 0%, rgba(59, 111, 122, 0.3) 60%);
+}
+
+.filtro-overlay h3 {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    color: white;
+    text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+}
+
+.filtro-overlay p {
+    font-size: 1.1rem;
+    color: white;
+    opacity: 0.9;
+    margin: 0;
+}
+
+/* Botón mostrar todos */
+.btn-mostrar-todos {
+    display: block;
+    margin: 0 auto 3rem;
+    padding: 1rem 2rem;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-mostrar-todos:hover {
+    background: #2563eb;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+/* Grid y card para el listado de servicios */
+.servicios-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.servicio-card-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+.servicio-card {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow: hidden;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.servicio-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+}
+
+.servicio-card-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+.servicio-info {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.servicio-info h3 {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.servicio-descripcion {
+    font-size: 0.9rem;
+    color: #6b7280;
+    margin-bottom: 1rem;
+    flex-grow: 1;
+}
+
+.servicio-precio {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #1f2937;
+    margin-bottom: 1rem;
+}
+
+/* Botón específico para contratar servicio */
+.servicio-contratar-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background-color: #3b82f6; /* Cambiado a color primario del repositorio */
+    color: #fff;
+    border: none;
+    padding: 0.75rem 1.25rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+    margin-top: auto;
+    box-shadow: 0 4px 12px rgba(59,130,246,0.12);
+}
+/**/
+.servicio-contratar-btn:hover {
+    background-color: #2563eb; /* Hover coherente con Global.css */
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(37,99,235,0.18);
+}
+
+.servicio-contratar-btn:active {
+    transform: scale(0.97);
+}
+
+.servicio-contratar-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(59,130,246,0.12);
+}
+
+/* Estados de carga y error */
+.loading-message,
+.error-message,
+.empty-message {
+    text-align: center;
+    padding: 2rem;
+    font-size: 1.1rem;
+    grid-column: 1 / -1;
+}
+
+.loading-message {
+    color: #6b7280;
+}
+
+.error-message {
+    color: #dc2626;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+}
+
+.empty-message {
+    color: #6b7280;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .servicios-filtros {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .filtro-card {
+        height: 250px;
+    }
+
+    .servicios-grid {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .servicios-page {
+        padding: 1rem;
+    }
+
+    .servicios-title {
+        font-size: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .servicios-subtitle {
+        font-size: 1.5rem;
+    }
+
+    .filtro-overlay h3 {
+        font-size: 2rem;
+    }
+
+    .servicios-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .servicio-card {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .servicios-filtros {
+        gap: 1rem;
+    }
+
+    .filtro-card {
+        height: 200px;
+    }
+
+    .filtro-overlay {
+        padding: 1.5rem;
+    }
+
+    .filtro-overlay h3 {
+        font-size: 1.5rem;
+    }
+
+    .filtro-overlay p {
+        font-size: 1rem;
+    }
+}

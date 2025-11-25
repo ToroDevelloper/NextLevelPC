@@ -1,0 +1,1141 @@
+=================================================================
+NEXTLEVEL PC - DOCUMENTACIÓN DE CAMBIOS Y MEJORAS
+=================================================================
+
+PENDIENTES:
+- Login: mostrar nombre del usuario al logiarse y apartado de perfil
+- Productos: organización más dinámica con carruseles horizontales
+- Footer: iconos reales de redes sociales (Facebook, Instagram)
+- Admin: interfaz para subir productos desde el dashboard
+
+=================================================================
+IMPLEMENTACIONES COMPLETADAS
+=================================================================
+
+-------------------------------------------------------------------
+NOVIEMBRE 14-15, 2025 - SISTEMA BASE
+-------------------------------------------------------------------
+
+✓ Detalle de Servicios con página individual
+✓ Campo imagen_url en tabla servicios
+✓ Carrito de compras con persistencia (localStorage)
+✓ Agendamiento de citas para servicios
+✓ Sistema de roles (cliente, empleado, admin)
+✓ Perfil básico en SPA
+✓ Tabla refresh_tokens para autenticación
+
+SCRIPTS SQL APLICADOS:
+
+-- Agregar imagen_url a servicios (si no existe)
+ALTER TABLE `servicios`
+  ADD COLUMN `imagen_url` varchar(255) DEFAULT NULL AFTER `descripcion`;
+
+-- Tabla citas_servicios
+CREATE TABLE IF NOT EXISTS `citas_servicios` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `servicio_id` INT(11) NOT NULL,
+  `nombre_cliente` VARCHAR(255) NOT NULL,
+  `email_cliente` VARCHAR(255) NOT NULL,
+  `telefono_cliente` VARCHAR(50) NOT NULL,
+  `direccion_cliente` TEXT NOT NULL,
+  `fecha_cita` DATETIME NOT NULL,
+  `descripcion_problema` TEXT DEFAULT NULL,
+  `estado` ENUM('pendiente', 'confirmada', 'cancelada', 'completada') NOT NULL DEFAULT 'pendiente',
+  `created_at` TIMESTAMP NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `servicio_id` (`servicio_id`),
+  CONSTRAINT `citas_servicios_ibfk_1` FOREIGN KEY (`servicio_id`) REFERENCES `servicios` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Tabla refresh_tokens
+CREATE TABLE `refresh_tokens` (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    token VARCHAR(512) NOT NULL UNIQUE,
+    expires_at DATETIME NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    INDEX idx_user_id (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Descripción detallada en productos
+ALTER TABLE `productos`
+  ADD COLUMN `descripcion_corta` VARCHAR(300) NULL AFTER `nombre`,
+  ADD COLUMN `descripcion_detallada` TEXT NULL AFTER `descripcion_corta`,
+  ADD COLUMN `especificaciones` TEXT NULL AFTER `descripcion_detallada`;
+
+-------------------------------------------------------------------
+NOVIEMBRE 16, 2025 - MEJORAS PRODUCTOS Y FILTROS
+-------------------------------------------------------------------
+
+✓ Filtrado por categorías en productos
+✓ Estado visual de productos (activo/inactivo)
+✓ Mejoras en normalización de imágenes
+✓ Optimización de rendimiento con memoización
+✓ Custom hooks para separación de responsabilidades
+
+SCRIPTS SQL APLICADOS:
+
+-- Modificar columna activo a estado
+ALTER TABLE productos DROP COLUMN activo;
+ALTER TABLE productos ADD COLUMN estado TINYINT(1) NOT NULL DEFAULT 1;
+
+-------------------------------------------------------------------
+NOVIEMBRE 20, 2025 - GALERÍA DE IMÁGENES Y UX SERVICIOS
+-------------------------------------------------------------------
+
+✓ Sistema de galería con tabla relacional (servicio_imagenes)
+✓ Redesign página detalle servicios (inspirado en Mercado Libre)
+✓ Breadcrumbs de navegación
+✓ Trust Badges (4 badges con iconos SVG)
+✓ Botón WhatsApp con mensaje pre-llenado
+✓ Microcopy en CTA principal
+✓ Sección de servicios relacionados
+✓ Layout responsive 2 columnas
+
+SCRIPTS SQL APLICADOS:
+
+-- 1. Crear tabla servicio_imagenes
+CREATE TABLE IF NOT EXISTS `servicio_imagenes` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `servicio_id` INT(11) NOT NULL,
+  `url` VARCHAR(500) NOT NULL COMMENT 'Image URL or path',
+  `alt_text` VARCHAR(255) NULL COMMENT 'Alt text for SEO and accessibility',
+  `orden` INT DEFAULT 0 COMMENT 'Display order (0 = first)',
+  `es_principal` TINYINT(1) DEFAULT 0 COMMENT 'Is this the main/featured image?',
+  `activo` TINYINT(1) DEFAULT 1 COMMENT 'Soft delete flag',
+  `fecha_creacion` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `fecha_actualizacion` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `servicio_id` (`servicio_id`),
+  KEY `idx_servicio_activo` (`servicio_id`, `activo`),
+  KEY `idx_servicio_orden` (`servicio_id`, `orden`),
+  KEY `idx_principal` (`servicio_id`, `es_principal`),
+  CONSTRAINT `servicio_imagenes_ibfk_1` FOREIGN KEY (`servicio_id`) REFERENCES `servicios` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Gallery images for services';
+
+-- 2. Migrar imagen_url a servicio_imagenes
+INSERT INTO servicio_imagenes (servicio_id, url, alt_text, orden, es_principal, activo)
+SELECT 
+    id, 
+    imagen_url,
+    CONCAT('Imagen principal de ', nombre) as alt_text,
+    0 as orden,
+    1 as es_principal,
+    1 as activo
+FROM servicios 
+WHERE imagen_url IS NOT NULL 
+  AND imagen_url != ''
+  AND NOT EXISTS (
+      SELECT 1 FROM servicio_imagenes WHERE servicio_id = servicios.id AND es_principal = 1
+  );
+
+-- 3. Reset completo con 12 servicios (6 básicos, 6 avanzados)
+DELETE FROM servicios;
+ALTER TABLE servicios AUTO_INCREMENT = 1;
+ALTER TABLE servicio_imagenes AUTO_INCREMENT = 1;
+
+INSERT INTO servicios (nombre, tipo, precio, descripcion, imagen_url, activo) VALUES
+-- BÁSICOS
+('Instalación de Windows/Linux', 'basico', 299.00,
+'Instalación limpia de sistema operativo Windows o Linux. Incluye drivers básicos, actualizaciones de seguridad, antivirus gratuito y configuración inicial del sistema.',
+'https://images.unsplash.com/photo-1629654297299-c8506221ca97?w=800&q=80', 1),
+
+('Limpieza y Mantenimiento Básico', 'basico', 199.00,
+'Limpieza física de componentes, eliminación de archivos temporales, optimización de inicio de Windows y verificación de salud de disco duro.',
+'https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=800&q=80', 1),
+
+('Instalación de Office y Programas', 'basico', 249.00,
+'Instalación de suite Office (Word, Excel, PowerPoint), navegadores, reproductores multimedia, compresores de archivos y programas básicos.',
+'https://images.unsplash.com/photo-1551808525-51a94da548ce?w=800&q=80', 1),
+
+('Diagnóstico de Problemas', 'basico', 149.00,
+'Diagnóstico completo de hardware y software para identificar fallas. Incluye reporte detallado de problemas encontrados y cotización de reparación.',
+'https://images.unsplash.com/photo-1591405351990-4726e331f141?w=800&q=80', 1),
+
+('Configuración de Router WiFi', 'basico', 199.00,
+'Configuración de router inalámbrico, cambio de contraseñas, optimización de canales WiFi, configuración de seguridad WPA3 y pruebas de velocidad.',
+'https://images.unsplash.com/photo-1606904825846-647eb07f5be2?w=800&q=80', 1),
+
+('Respaldo de Datos (Backup)', 'basico', 299.00,
+'Respaldo completo de documentos, fotos, videos y archivos importantes a disco externo o nube. Incluye verificación de integridad de datos.',
+'https://images.unsplash.com/photo-1544654803-b69140b285a1?w=800&q=80', 1),
+
+-- AVANZADOS
+('Ensamblaje de PC Gaming/Workstation', 'avanzado', 1499.00,
+'Armado profesional de PC gaming o estación de trabajo. Incluye: selección optimizada de componentes, ensamblaje con cable management, instalación de SO y drivers, overclock seguro y garantía de 6 meses.',
+'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=800&q=80', 1),
+
+('Reparación Avanzada de Laptops', 'avanzado', 899.00,
+'Reparación de nivel experto: reballing de GPU/CPU, cambio de bisagras, reemplazo de pantalla LED/OLED, upgrading a SSD NVMe, expansión de RAM y renovación de pasta térmica.',
+'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=800&q=80', 1),
+
+('Recuperación de Datos Profesional', 'avanzado', 1299.00,
+'Recuperación avanzada de datos de discos duros dañados, SSD, RAID, tarjetas SD corruptas. Utilizamos software forense. Evaluación gratuita, pago solo si recuperamos tus datos.',
+'https://images.unsplash.com/photo-1633265486064-086b219458ec?w=800&q=80', 1),
+
+('Instalación de Red Empresarial', 'avanzado', 2499.00,
+'Diseño e implementación de red empresarial completa. Incluye: cableado estructurado Cat6/Cat7, switches administrables, puntos de acceso WiFi 6, servidor de dominio y firewall.',
+'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&q=80', 1),
+
+('Configuración de Servidor (Windows Server/Linux)', 'avanzado', 1899.00,
+'Instalación y configuración completa de servidor empresarial: Active Directory, DNS, DHCP, File Server, controlador de dominio, políticas de grupo y respaldos automáticos.',
+'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=800&q=80', 1),
+
+('Plan de Soporte Técnico Empresarial', 'avanzado', 999.00,
+'Soporte técnico integral mensual: atención 24/7 vía WhatsApp/email/llamada, 3 visitas presenciales incluidas, mantenimiento preventivo mensual y monitoreo remoto.',
+'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80', 1);
+
+-- 4. Insertar galerías (ejemplo servicio ID 1)
+INSERT INTO servicio_imagenes (servicio_id, url, alt_text, orden, es_principal) VALUES
+(1, 'https://images.unsplash.com/photo-1629654297299-c8506221ca97?w=800&q=80', 'Instalación de sistema operativo', 0, 1),
+(1, 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80', 'Configuración de Windows', 1, 0),
+(1, 'https://images.unsplash.com/photo-1551808525-51a94da548ce?w=800&q=80', 'Escritorio configurado', 2, 0),
+(1, 'https://images.unsplash.com/photo-1538688423619-a81d3f23454b?w=800&q=80', 'Actualizaciones del sistema', 3, 0);
+
+-- (Repetir para los 11 servicios restantes - Ver script completo: reset_servicios_basico_avanzado.sql)
+
+=================================================================
+ARCHIVOS MODIFICADOS POR FECHA
+=================================================================
+
+NOVIEMBRE 20, 2025:
+Backend:
+  - backend/models/Servicio.js (JOIN con servicio_imagenes)
+
+Frontend:
+  - fronted/src/pages/ServicioDetail.jsx (galería + mejoras UX)
+  - fronted/src/styles/ServicioDetail.css (diseño moderno completo)
+
+Database:
+  - Documentación/nextlevel.sql (estructura actualizada)
+
+=================================================================
+CONSULTAS ÚTILES DE VERIFICACIÓN
+=================================================================
+
+-- Ver servicios con conteo de imágenes
+SELECT 
+    s.id, s.nombre, s.tipo, CONCAT('$', s.precio) as precio,
+    COUNT(si.id) as total_imagenes
+FROM servicios s
+LEFT JOIN servicio_imagenes si ON s.id = si.servicio_id
+GROUP BY s.id
+ORDER BY s.id;
+
+-- Ver todas las imágenes ordenadas
+SELECT 
+    s.nombre as servicio, si.alt_text, si.es_principal, si.orden
+FROM servicio_imagenes si
+JOIN servicios s ON si.servicio_id = s.id
+ORDER BY si.servicio_id, si.orden;
+
+-- Resumen por tipo
+SELECT 
+    tipo,
+    COUNT(*) as total,
+    CONCAT('$', MIN(precio)) as min,
+    CONCAT('$', MAX(precio)) as max
+FROM servicios
+WHERE activo = 1
+GROUP BY tipo;
+
+-- Verificar estructura de servicio_imagenes
+
+-- Tabla refresh_tokens
+CREATE TABLE `refresh_tokens` (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    token VARCHAR(512) NOT NULL UNIQUE,
+    expires_at DATETIME NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    INDEX idx_user_id (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Descripción detallada en productos
+ALTER TABLE `productos`
+  ADD COLUMN `descripcion_corta` VARCHAR(300) NULL AFTER `nombre`,
+  ADD COLUMN `descripcion_detallada` TEXT NULL AFTER `descripcion_corta`,
+  ADD COLUMN `especificaciones` TEXT NULL AFTER `descripcion_detallada`;
+
+-------------------------------------------------------------------
+NOVIEMBRE 16, 2025 - MEJORAS PRODUCTOS Y FILTROS
+-------------------------------------------------------------------
+
+✓ Filtrado por categorías en productos
+✓ Estado visual de productos (activo/inactivo)
+✓ Mejoras en normalización de imágenes
+✓ Optimización de rendimiento con memoización
+✓ Custom hooks para separación de responsabilidades
+
+SCRIPTS SQL APLICADOS:
+
+-- Modificar columna activo a estado
+ALTER TABLE productos DROP COLUMN activo;
+ALTER TABLE productos ADD COLUMN estado TINYINT(1) NOT NULL DEFAULT 1;
+
+-------------------------------------------------------------------
+NOVIEMBRE 20, 2025 - GALERÍA DE IMÁGENES Y UX SERVICIOS
+-------------------------------------------------------------------
+
+✓ Sistema de galería con tabla relacional (servicio_imagenes)
+✓ Redesign página detalle servicios (inspirado en Mercado Libre)
+✓ Breadcrumbs de navegación
+✓ Trust Badges (4 badges con iconos SVG)
+✓ Botón WhatsApp con mensaje pre-llenado
+✓ Microcopy en CTA principal
+✓ Sección de servicios relacionados
+✓ Layout responsive 2 columnas
+
+SCRIPTS SQL APLICADOS:
+
+-- 1. Crear tabla servicio_imagenes
+CREATE TABLE IF NOT EXISTS `servicio_imagenes` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `servicio_id` INT(11) NOT NULL,
+  `url` VARCHAR(500) NOT NULL COMMENT 'Image URL or path',
+  `alt_text` VARCHAR(255) NULL COMMENT 'Alt text for SEO and accessibility',
+  `orden` INT DEFAULT 0 COMMENT 'Display order (0 = first)',
+  `es_principal` TINYINT(1) DEFAULT 0 COMMENT 'Is this the main/featured image?',
+  `activo` TINYINT(1) DEFAULT 1 COMMENT 'Soft delete flag',
+  `fecha_creacion` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `fecha_actualizacion` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `servicio_id` (`servicio_id`),
+  KEY `idx_servicio_activo` (`servicio_id`, `activo`),
+  KEY `idx_servicio_orden` (`servicio_id`, `orden`),
+  KEY `idx_principal` (`servicio_id`, `es_principal`),
+  CONSTRAINT `servicio_imagenes_ibfk_1` FOREIGN KEY (`servicio_id`) REFERENCES `servicios` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Gallery images for services';
+
+-- 2. Migrar imagen_url a servicio_imagenes
+INSERT INTO servicio_imagenes (servicio_id, url, alt_text, orden, es_principal, activo)
+SELECT 
+    id, 
+    imagen_url,
+    CONCAT('Imagen principal de ', nombre) as alt_text,
+    0 as orden,
+    1 as es_principal,
+    1 as activo
+FROM servicios 
+WHERE imagen_url IS NOT NULL 
+  AND imagen_url != ''
+  AND NOT EXISTS (
+      SELECT 1 FROM servicio_imagenes WHERE servicio_id = servicios.id AND es_principal = 1
+  );
+
+-- 3. Reset completo con 12 servicios (6 básicos, 6 avanzados)
+DELETE FROM servicios;
+ALTER TABLE servicios AUTO_INCREMENT = 1;
+ALTER TABLE servicio_imagenes AUTO_INCREMENT = 1;
+
+INSERT INTO servicios (nombre, tipo, precio, descripcion, imagen_url, activo) VALUES
+-- BÁSICOS
+('Instalación de Windows/Linux', 'basico', 299.00,
+'Instalación limpia de sistema operativo Windows o Linux. Incluye drivers básicos, actualizaciones de seguridad, antivirus gratuito y configuración inicial del sistema.',
+'https://images.unsplash.com/photo-1629654297299-c8506221ca97?w=800&q=80', 1),
+
+('Limpieza y Mantenimiento Básico', 'basico', 199.00,
+'Limpieza física de componentes, eliminación de archivos temporales, optimización de inicio de Windows y verificación de salud de disco duro.',
+'https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=800&q=80', 1),
+
+('Instalación de Office y Programas', 'basico', 249.00,
+'Instalación de suite Office (Word, Excel, PowerPoint), navegadores, reproductores multimedia, compresores de archivos y programas básicos.',
+'https://images.unsplash.com/photo-1551808525-51a94da548ce?w=800&q=80', 1),
+
+('Diagnóstico de Problemas', 'basico', 149.00,
+'Diagnóstico completo de hardware y software para identificar fallas. Incluye reporte detallado de problemas encontrados y cotización de reparación.',
+'https://images.unsplash.com/photo-1591405351990-4726e331f141?w=800&q=80', 1),
+
+('Configuración de Router WiFi', 'basico', 199.00,
+'Configuración de router inalámbrico, cambio de contraseñas, optimización de canales WiFi, configuración de seguridad WPA3 y pruebas de velocidad.',
+'https://images.unsplash.com/photo-1606904825846-647eb07f5be2?w=800&q=80', 1),
+
+('Respaldo de Datos (Backup)', 'basico', 299.00,
+'Respaldo completo de documentos, fotos, videos y archivos importantes a disco externo o nube. Incluye verificación de integridad de datos.',
+'https://images.unsplash.com/photo-1544654803-b69140b285a1?w=800&q=80', 1),
+
+-- AVANZADOS
+('Ensamblaje de PC Gaming/Workstation', 'avanzado', 1499.00,
+'Armado profesional de PC gaming o estación de trabajo. Incluye: selección optimizada de componentes, ensamblaje con cable management, instalación de SO y drivers, overclock seguro y garantía de 6 meses.',
+'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=800&q=80', 1),
+
+('Reparación Avanzada de Laptops', 'avanzado', 899.00,
+'Reparación de nivel experto: reballing de GPU/CPU, cambio de bisagras, reemplazo de pantalla LED/OLED, upgrading a SSD NVMe, expansión de RAM y renovación de pasta térmica.',
+'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=800&q=80', 1),
+
+('Recuperación de Datos Profesional', 'avanzado', 1299.00,
+'Recuperación avanzada de datos de discos duros dañados, SSD, RAID, tarjetas SD corruptas. Utilizamos software forense. Evaluación gratuita, pago solo si recuperamos tus datos.',
+'https://images.unsplash.com/photo-1633265486064-086b219458ec?w=800&q=80', 1),
+
+('Instalación de Red Empresarial', 'avanzado', 2499.00,
+'Diseño e implementación de red empresarial completa. Incluye: cableado estructurado Cat6/Cat7, switches administrables, puntos de acceso WiFi 6, servidor de dominio y firewall.',
+'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&q=80', 1),
+
+('Configuración de Servidor (Windows Server/Linux)', 'avanzado', 1899.00,
+'Instalación y configuración completa de servidor empresarial: Active Directory, DNS, DHCP, File Server, controlador de dominio, políticas de grupo y respaldos automáticos.',
+'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=800&q=80', 1),
+
+('Plan de Soporte Técnico Empresarial', 'avanzado', 999.00,
+'Soporte técnico integral mensual: atención 24/7 vía WhatsApp/email/llamada, 3 visitas presenciales incluidas, mantenimiento preventivo mensual y monitoreo remoto.',
+'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80', 1);
+
+-- 4. Insertar galerías (ejemplo servicio ID 1)
+INSERT INTO servicio_imagenes (servicio_id, url, alt_text, orden, es_principal) VALUES
+(1, 'https://images.unsplash.com/photo-1629654297299-c8506221ca97?w=800&q=80', 'Instalación de sistema operativo', 0, 1),
+(1, 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80', 'Configuración de Windows', 1, 0),
+(1, 'https://images.unsplash.com/photo-1551808525-51a94da548ce?w=800&q=80', 'Escritorio configurado', 2, 0),
+(1, 'https://images.unsplash.com/photo-1538688423619-a81d3f23454b?w=800&q=80', 'Actualizaciones del sistema', 3, 0);
+
+-- (Repetir para los 11 servicios restantes - Ver script completo: reset_servicios_basico_avanzado.sql)
+
+=================================================================
+ARCHIVOS MODIFICADOS POR FECHA
+=================================================================
+
+NOVIEMBRE 20, 2025:
+Backend:
+  - backend/models/Servicio.js (JOIN con servicio_imagenes)
+
+Frontend:
+  - fronted/src/pages/ServicioDetail.jsx (galería + mejoras UX)
+  - fronted/src/styles/ServicioDetail.css (diseño moderno completo)
+
+Database:
+  - Documentación/nextlevel.sql (estructura actualizada)
+
+=================================================================
+CONSULTAS ÚTILES DE VERIFICACIÓN
+=================================================================
+
+-- Ver servicios con conteo de imágenes
+SELECT 
+    s.id, s.nombre, s.tipo, CONCAT('$', s.precio) as precio,
+    COUNT(si.id) as total_imagenes
+FROM servicios s
+LEFT JOIN servicio_imagenes si ON s.id = si.servicio_id
+GROUP BY s.id
+ORDER BY s.id;
+
+-- Ver todas las imágenes ordenadas
+SELECT 
+    s.nombre as servicio, si.alt_text, si.es_principal, si.orden
+FROM servicio_imagenes si
+JOIN servicios s ON si.servicio_id = s.id
+ORDER BY si.servicio_id, si.orden;
+
+-- Resumen por tipo
+SELECT 
+    tipo,
+    COUNT(*) as total,
+    CONCAT('$', MIN(precio)) as min,
+    CONCAT('$', MAX(precio)) as max
+FROM servicios
+WHERE activo = 1
+GROUP BY tipo;
+
+-- Verificar estructura de servicio_imagenes
+DESCRIBE servicio_imagenes;
+
+-- Verificar estructura de servicios
+DESCRIBE servicios;
+
+=================================================================
+STRIPE-PASARELA DE PAGO
+=================================================================
+
+Se ha implementado un sistema completo de procesamiento de pagos con Stripe integrado a la plataforma NextLevelPC,
+que incluye la configuración del frontend con React utilizando @stripe/react-stripe-js para renderizar el componente Checkout con CardElement,
+un StripeContext que centraliza la comunicación con la API de Stripe para crear PaymentIntents,
+un backend en Node.js/Express con PaymentsController que crea órdenes en la base de datos MySQL antes de iniciar el proceso de pago (utilizando la arquitectura existente de Services, DTOs y Models),
+inserta automáticamente los items de cada orden con sus cantidades y precios, genera metadatos que se envían a Stripe,
+configura webhooks que escuchan eventos de Stripe (especialmente payment_intent.succeeded)
+para actualizar automáticamente el estado de las órdenes de "pendiente" a "pagado" y el estado de la orden de "pendiente" a "completada" en la base de datos,
+maneja correctamente el raw body en Express para verificar las firmas criptográficas de los webhooks, integra Stripe CLI para desarrollo local,
+y proporciona feedback visual completo al usuario durante todo el flujo de pago (estados de carga, errores, confirmación de pago exitoso con número de orden),
+todo funcionando de forma sincronizada entre el frontend, backend, Stripe y la base de datos.
+
+-------------------------------------------------------------------
+NOVIEMBRE 21, 2025 - PAGOS DE SERVICIOS CON STRIPE
+-------------------------------------------------------------------
+
+✓ Sistema completo de pagos para servicios contratados
+✓ Modal de confirmación con opciones "Pagar Ahora" / "Pagar Más Tarde"
+✓ Integración completa con Stripe (PaymentIntent + Webhooks)
+✓ Relación bidireccional entre citas_servicios y ordenes
+✓ Actualización automática de estado de pago vía webhook
+✓ Corrección de doble conversión de centavos (bug crítico resuelto)
+
+SCRIPTS SQL APLICADOS:
+
+-- 1. Agregar soporte de pagos a citas_servicios
+ALTER TABLE citas_servicios 
+ADD COLUMN estado_pago ENUM('pendiente', 'pagado', 'cancelado') 
+DEFAULT 'pendiente' 
+COMMENT 'Estado del pago de la cita'
+AFTER estado;
+
+ALTER TABLE citas_servicios 
+ADD COLUMN orden_id INT NULL 
+COMMENT 'ID de la orden asociada al pago'
+AFTER estado_pago;
+
+ALTER TABLE citas_servicios 
+ADD CONSTRAINT fk_cita_orden 
+FOREIGN KEY (orden_id) REFERENCES ordenes(id) 
+ON DELETE SET NULL
+ON UPDATE CASCADE;
+
+-- 2. Vincular ordenes con citas
+ALTER TABLE ordenes 
+ADD COLUMN cita_servicio_id INT NULL 
+COMMENT 'ID de la cita de servicio asociada'
+AFTER tipo;
+
+ALTER TABLE ordenes 
+ADD CONSTRAINT fk_orden_cita 
+FOREIGN KEY (cita_servicio_id) REFERENCES citas_servicios(id) 
+ON DELETE SET NULL
+ON UPDATE CASCADE;
+
+-- 3. Índices para optimización
+CREATE INDEX idx_cita_estado_pago ON citas_servicios(estado_pago);
+CREATE INDEX idx_cita_orden_id ON citas_servicios(orden_id);
+CREATE INDEX idx_orden_cita_id ON ordenes(cita_servicio_id);
+
+FLUJO COMPLETO:
+1. Usuario agenda cita desde ServicioDetail
+2. Modal muestra confirmación con opciones de pago
+3. Al elegir "Pagar Ahora":
+   - Servicio se agrega al carrito con metadata (cita_id, fecha)
+   - Redirige a /checkout
+4. Backend crea orden y PaymentIntent en Stripe
+5. Usuario completa pago con tarjeta
+    1 as activo
+FROM servicios 
+WHERE imagen_url IS NOT NULL 
+  AND imagen_url != ''
+  AND NOT EXISTS (
+      SELECT 1 FROM servicio_imagenes WHERE servicio_id = servicios.id AND es_principal = 1
+  );
+
+-- 3. Reset completo con 12 servicios (6 básicos, 6 avanzados)
+DELETE FROM servicios;
+ALTER TABLE servicios AUTO_INCREMENT = 1;
+ALTER TABLE servicio_imagenes AUTO_INCREMENT = 1;
+
+INSERT INTO servicios (nombre, tipo, precio, descripcion, imagen_url, activo) VALUES
+-- BÁSICOS
+('Instalación de Windows/Linux', 'basico', 299.00,
+'Instalación limpia de sistema operativo Windows o Linux. Incluye drivers básicos, actualizaciones de seguridad, antivirus gratuito y configuración inicial del sistema.',
+'https://images.unsplash.com/photo-1629654297299-c8506221ca97?w=800&q=80', 1),
+
+('Limpieza y Mantenimiento Básico', 'basico', 199.00,
+'Limpieza física de componentes, eliminación de archivos temporales, optimización de inicio de Windows y verificación de salud de disco duro.',
+'https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=800&q=80', 1),
+
+('Instalación de Office y Programas', 'basico', 249.00,
+'Instalación de suite Office (Word, Excel, PowerPoint), navegadores, reproductores multimedia, compresores de archivos y programas básicos.',
+'https://images.unsplash.com/photo-1551808525-51a94da548ce?w=800&q=80', 1),
+
+('Diagnóstico de Problemas', 'basico', 149.00,
+'Diagnóstico completo de hardware y software para identificar fallas. Incluye reporte detallado de problemas encontrados y cotización de reparación.',
+'https://images.unsplash.com/photo-1591405351990-4726e331f141?w=800&q=80', 1),
+
+('Configuración de Router WiFi', 'basico', 199.00,
+'Configuración de router inalámbrico, cambio de contraseñas, optimización de canales WiFi, configuración de seguridad WPA3 y pruebas de velocidad.',
+'https://images.unsplash.com/photo-1606904825846-647eb07f5be2?w=800&q=80', 1),
+
+('Respaldo de Datos (Backup)', 'basico', 299.00,
+'Respaldo completo de documentos, fotos, videos y archivos importantes a disco externo o nube. Incluye verificación de integridad de datos.',
+'https://images.unsplash.com/photo-1544654803-b69140b285a1?w=800&q=80', 1),
+
+-- AVANZADOS
+('Ensamblaje de PC Gaming/Workstation', 'avanzado', 1499.00,
+'Armado profesional de PC gaming o estación de trabajo. Incluye: selección optimizada de componentes, ensamblaje con cable management, instalación de SO y drivers, overclock seguro y garantía de 6 meses.',
+'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=800&q=80', 1),
+
+('Reparación Avanzada de Laptops', 'avanzado', 899.00,
+'Reparación de nivel experto: reballing de GPU/CPU, cambio de bisagras, reemplazo de pantalla LED/OLED, upgrading a SSD NVMe, expansión de RAM y renovación de pasta térmica.',
+'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=800&q=80', 1),
+
+('Recuperación de Datos Profesional', 'avanzado', 1299.00,
+'Recuperación avanzada de datos de discos duros dañados, SSD, RAID, tarjetas SD corruptas. Utilizamos software forense. Evaluación gratuita, pago solo si recuperamos tus datos.',
+'https://images.unsplash.com/photo-1633265486064-086b219458ec?w=800&q=80', 1),
+
+('Instalación de Red Empresarial', 'avanzado', 2499.00,
+'Diseño e implementación de red empresarial completa. Incluye: cableado estructurado Cat6/Cat7, switches administrables, puntos de acceso WiFi 6, servidor de dominio y firewall.',
+'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&q=80', 1),
+
+('Configuración de Servidor (Windows Server/Linux)', 'avanzado', 1899.00,
+'Instalación y configuración completa de servidor empresarial: Active Directory, DNS, DHCP, File Server, controlador de dominio, políticas de grupo y respaldos automáticos.',
+'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=800&q=80', 1),
+
+('Plan de Soporte Técnico Empresarial', 'avanzado', 999.00,
+'Soporte técnico integral mensual: atención 24/7 vía WhatsApp/email/llamada, 3 visitas presenciales incluidas, mantenimiento preventivo mensual y monitoreo remoto.',
+'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80', 1);
+
+-- 4. Insertar galerías (ejemplo servicio ID 1)
+INSERT INTO servicio_imagenes (servicio_id, url, alt_text, orden, es_principal) VALUES
+(1, 'https://images.unsplash.com/photo-1629654297299-c8506221ca97?w=800&q=80', 'Instalación de sistema operativo', 0, 1),
+(1, 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80', 'Configuración de Windows', 1, 0),
+(1, 'https://images.unsplash.com/photo-1551808525-51a94da548ce?w=800&q=80', 'Escritorio configurado', 2, 0),
+(1, 'https://images.unsplash.com/photo-1538688423619-a81d3f23454b?w=800&q=80', 'Actualizaciones del sistema', 3, 0);
+
+-- (Repetir para los 11 servicios restantes - Ver script completo: reset_servicios_basico_avanzado.sql)
+
+=================================================================
+ARCHIVOS MODIFICADOS POR FECHA
+=================================================================
+
+NOVIEMBRE 20, 2025:
+Backend:
+  - backend/models/Servicio.js (JOIN con servicio_imagenes)
+
+Frontend:
+  - fronted/src/pages/ServicioDetail.jsx (galería + mejoras UX)
+  - fronted/src/styles/ServicioDetail.css (diseño moderno completo)
+
+Database:
+  - Documentación/nextlevel.sql (estructura actualizada)
+
+=================================================================
+CONSULTAS ÚTILES DE VERIFICACIÓN
+=================================================================
+
+-- Ver servicios con conteo de imágenes
+SELECT 
+    s.id, s.nombre, s.tipo, CONCAT('$', s.precio) as precio,
+    COUNT(si.id) as total_imagenes
+FROM servicios s
+LEFT JOIN servicio_imagenes si ON s.id = si.servicio_id
+GROUP BY s.id
+ORDER BY s.id;
+
+-- Ver todas las imágenes ordenadas
+SELECT 
+    s.nombre as servicio, si.alt_text, si.es_principal, si.orden
+FROM servicio_imagenes si
+JOIN servicios s ON si.servicio_id = s.id
+ORDER BY si.servicio_id, si.orden;
+
+-- Resumen por tipo
+SELECT 
+    tipo,
+    COUNT(*) as total,
+    CONCAT('$', MIN(precio)) as min,
+    CONCAT('$', MAX(precio)) as max
+FROM servicios
+WHERE activo = 1
+GROUP BY tipo;
+
+-- Verificar estructura de servicio_imagenes
+DESCRIBE servicio_imagenes;
+
+-- Verificar estructura de servicios
+DESCRIBE servicios;
+
+=================================================================
+STRIPE-PASARELA DE PAGO
+=================================================================
+
+Se ha implementado un sistema completo de procesamiento de pagos con Stripe integrado a la plataforma NextLevelPC,
+que incluye la configuración del frontend con React utilizando @stripe/react-stripe-js para renderizar el componente Checkout con CardElement,
+un StripeContext que centraliza la comunicación con la API de Stripe para crear PaymentIntents,
+un backend en Node.js/Express con PaymentsController que crea órdenes en la base de datos MySQL antes de iniciar el proceso de pago (utilizando la arquitectura existente de Services, DTOs y Models),
+inserta automáticamente los items de cada orden con sus cantidades y precios, genera metadatos que se envían a Stripe,
+configura webhooks que escuchan eventos de Stripe (especialmente payment_intent.succeeded)
+para actualizar automáticamente el estado de las órdenes de "pendiente" a "pagado" y el estado de la orden de "pendiente" a "completada" en la base de datos,
+maneja correctamente el raw body en Express para verificar las firmas criptográficas de los webhooks, integra Stripe CLI para desarrollo local,
+y proporciona feedback visual completo al usuario durante todo el flujo de pago (estados de carga, errores, confirmación de pago exitoso con número de orden),
+todo funcionando de forma sincronizada entre el frontend, backend, Stripe y la base de datos.
+
+-------------------------------------------------------------------
+NOVIEMBRE 21, 2025 - PAGOS DE SERVICIOS CON STRIPE
+-------------------------------------------------------------------
+
+✓ Sistema completo de pagos para servicios contratados
+✓ Modal de confirmación con opciones "Pagar Ahora" / "Pagar Más Tarde"
+✓ Integración completa con Stripe (PaymentIntent + Webhooks)
+✓ Relación bidireccional entre citas_servicios y ordenes
+✓ Actualización automática de estado de pago vía webhook
+✓ Corrección de doble conversión de centavos (bug crítico resuelto)
+
+SCRIPTS SQL APLICADOS:
+
+-- 1. Agregar soporte de pagos a citas_servicios
+ALTER TABLE citas_servicios 
+ADD COLUMN estado_pago ENUM('pendiente', 'pagado', 'cancelado') 
+DEFAULT 'pendiente' 
+COMMENT 'Estado del pago de la cita'
+AFTER estado;
+
+ALTER TABLE citas_servicios 
+ADD COLUMN orden_id INT NULL 
+COMMENT 'ID de la orden asociada al pago'
+AFTER estado_pago;
+
+ALTER TABLE citas_servicios 
+ADD CONSTRAINT fk_cita_orden 
+FOREIGN KEY (orden_id) REFERENCES ordenes(id) 
+ON DELETE SET NULL
+ON UPDATE CASCADE;
+
+-- 2. Vincular ordenes con citas
+ALTER TABLE ordenes 
+ADD COLUMN cita_servicio_id INT NULL 
+COMMENT 'ID de la cita de servicio asociada'
+AFTER tipo;
+
+ALTER TABLE ordenes 
+ADD CONSTRAINT fk_orden_cita 
+FOREIGN KEY (cita_servicio_id) REFERENCES citas_servicios(id) 
+ON DELETE SET NULL
+ON UPDATE CASCADE;
+
+-- 3. Índices para optimización
+CREATE INDEX idx_cita_estado_pago ON citas_servicios(estado_pago);
+CREATE INDEX idx_cita_orden_id ON citas_servicios(orden_id);
+CREATE INDEX idx_orden_cita_id ON ordenes(cita_servicio_id);
+
+FLUJO COMPLETO:
+1. Usuario agenda cita desde ServicioDetail
+2. Modal muestra confirmación con opciones de pago
+3. Al elegir "Pagar Ahora":
+   - Servicio se agrega al carrito con metadata (cita_id, fecha)
+   - Redirige a /checkout
+4. Backend crea orden y PaymentIntent en Stripe
+5. Usuario completa pago con tarjeta
+6. Webhook de Stripe actualiza:
+   - Estado de orden: pagado/completada
+   - Estado de cita: pagado
+   - Vincula orden_id con cita_servicio_id
+
+CORRECCIÓN CRÍTICA:
+- Bug: Se cobraba 100x el precio ($250 → $25,000)
+- Causa: Doble conversión a centavos (frontend y backend)
+- Solución: Remover multiplicación por 100 en PaymentsController.js línea 30
+- Estado: RESUELTO 
+
+-------------------------------------------------------------------
+NOVIEMBRE 21, 2025 - PASARELA DE PAGOS Y FACTURACIÓN
+-------------------------------------------------------------------
+
+✓ Integración completa de Stripe para pagos
+✓ Sistema de pago antes de agendar servicios
+✓ Generación automática de facturas post-pago
+✓ Webhooks de Stripe para actualización de estados
+✓ Creación automática de citas al pagar servicios
+✓ Redirección automática a factura después del pago
+
+FUNCIONALIDADES IMPLEMENTADAS:
+
+1. PASARELA DE PAGOS STRIPE
+   - Endpoint: POST /api/payments/create-payment-intent
+   - Proceso: Orden → PaymentIntent → Pago → Webhook
+   - Tarjetas de prueba: 4242 4242 4242 4242
+   
+2. FLUJO DE PAGO PARA SERVICIOS
+   - Usuario selecciona servicio
+   - Agenda fecha/hora en modal
+   - Redirige a checkout
+   - Paga con tarjeta
+   - Sistema crea orden, cita y factura automáticamente
+
+3. SISTEMA DE FACTURAS
+   - Componente: Factura.jsx
+   - Endpoint sin autenticación: GET /api/ordenes/:id
+   - Muestra: empresa, orden, items, total, método de pago
+   - Funciones: imprimir factura, volver al inicio
+
+4. WEBHOOKS STRIPE
+   - Endpoint: POST /api/payments/webhook
+   - Eventos: payment_intent.succeeded
+   - Acciones: actualiza estado_pago, crea cita automáticamente
+   - Firma verificada con STRIPE_WEBHOOK_SECRET
+
+5. MODIFICACIONES BACKEND
+   - StripeContext: retorna {clientSecret, ordenId, numeroOrden}
+   - Ordenes.js: GET /:id sin middleware viewAuth
+   - OrdenesController: validación condicional de permisos
+   - PaymentsController: webhook handler y payment intent
+
+6. MODIFICACIONES FRONTEND
+   - Checkout.jsx: navigate directo a factura (sin alert)
+   - Factura.jsx: componente completo de factura
+   - StripeContext.jsx: retorna objeto completo del backend
+   - AgendarServicioModal.jsx: pasa citaData al carrito
+
+SCRIPTS SQL APLICADOS:
+
+-- Agregar campos Stripe a tabla ordenes
+ALTER TABLE `ordenes`
+ADD COLUMN `stripe_payment_intent_id` VARCHAR(255) DEFAULT NULL AFTER `estado_pago`,
+ADD COLUMN `fecha_pago` TIMESTAMP NULL DEFAULT NULL AFTER `stripe_payment_intent_id`;
+
+-- Agregar índice para búsqueda por payment intent
+ALTER TABLE `ordenes`
+ADD INDEX `idx_stripe_payment_intent` (`stripe_payment_intent_id`);
+
+-- Actualizar ordenes existentes con estado correcto
+UPDATE `ordenes` SET `estado_pago` = 'pagado' 
+WHERE `stripe_payment_intent_id` IS NOT NULL;
+
+COMANDOS STRIPE CLI:
+
+# Escuchar webhooks localmente
+stripe listen --forward-to localhost:8080/api/payments/webhook
+
+# Login a Stripe
+stripe login
+
+# Ver eventos en tiempo real
+stripe events list
+
+VARIABLES DE ENTORNO REQUERIDAS (.env backend):
+
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+ENDPOINTS API:
+
+POST /api/payments/create-payment-intent
+- Body: { amount, currency, metadata }
+- Response: { clientSecret, ordenId, numeroOrden }
+
+POST /api/payments/webhook
+- Headers: stripe-signature
+- Body: Stripe event object
+- Response: { received: true }
+
+GET /api/ordenes/:id
+- Sin autenticación (público)
+- Response: { success, data: {orden con items} }
+
+ARCHIVOS MODIFICADOS:
+
+Backend:
+- backend/controllers/PaymentsController.js (NUEVO)
+- backend/routes/Payments.js (NUEVO)
+- backend/routes/Ordenes.js
+- backend/controllers/OrdenesController.js
+- backend/server.js (agregado express.raw para webhooks)
+
+GROUP BY tipo;
+
+-- Verificar estructura de servicio_imagenes
+DESCRIBE servicio_imagenes;
+
+-- Verificar estructura de servicios
+DESCRIBE servicios;
+
+=================================================================
+STRIPE-PASARELA DE PAGO
+=================================================================
+
+Se ha implementado un sistema completo de procesamiento de pagos con Stripe integrado a la plataforma NextLevelPC,
+que incluye la configuración del frontend con React utilizando @stripe/react-stripe-js para renderizar el componente Checkout con CardElement,
+un StripeContext que centraliza la comunicación con la API de Stripe para crear PaymentIntents,
+un backend en Node.js/Express con PaymentsController que crea órdenes en la base de datos MySQL antes de iniciar el proceso de pago (utilizando la arquitectura existente de Services, DTOs y Models),
+inserta automáticamente los items de cada orden con sus cantidades y precios, genera metadatos que se envían a Stripe,
+configura webhooks que escuchan eventos de Stripe (especialmente payment_intent.succeeded)
+para actualizar automáticamente el estado de las órdenes de "pendiente" a "pagado" y el estado de la orden de "pendiente" a "completada" en la base de datos,
+maneja correctamente el raw body en Express para verificar las firmas criptográficas de los webhooks, integra Stripe CLI para desarrollo local,
+y proporciona feedback visual completo al usuario durante todo el flujo de pago (estados de carga, errores, confirmación de pago exitoso con número de orden),
+todo funcionando de forma sincronizada entre el frontend, backend, Stripe y la base de datos.
+
+-------------------------------------------------------------------
+NOVIEMBRE 21, 2025 - PAGOS DE SERVICIOS CON STRIPE
+-------------------------------------------------------------------
+
+✓ Sistema completo de pagos para servicios contratados
+✓ Modal de confirmación con opciones "Pagar Ahora" / "Pagar Más Tarde"
+✓ Integración completa con Stripe (PaymentIntent + Webhooks)
+✓ Relación bidireccional entre citas_servicios y ordenes
+✓ Actualización automática de estado de pago vía webhook
+✓ Corrección de doble conversión de centavos (bug crítico resuelto)
+
+SCRIPTS SQL APLICADOS:
+
+-- 1. Agregar soporte de pagos a citas_servicios
+ALTER TABLE citas_servicios 
+ADD COLUMN estado_pago ENUM('pendiente', 'pagado', 'cancelado') 
+DEFAULT 'pendiente' 
+COMMENT 'Estado del pago de la cita'
+AFTER estado;
+
+ALTER TABLE citas_servicios 
+ADD COLUMN orden_id INT NULL 
+COMMENT 'ID de la orden asociada al pago'
+AFTER estado_pago;
+
+ALTER TABLE citas_servicios 
+ADD CONSTRAINT fk_cita_orden 
+FOREIGN KEY (orden_id) REFERENCES ordenes(id) 
+ON DELETE SET NULL
+ON UPDATE CASCADE;
+
+-- 2. Vincular ordenes con citas
+ALTER TABLE ordenes 
+ADD COLUMN cita_servicio_id INT NULL 
+COMMENT 'ID de la cita de servicio asociada'
+AFTER tipo;
+
+ALTER TABLE ordenes 
+ADD CONSTRAINT fk_orden_cita 
+FOREIGN KEY (cita_servicio_id) REFERENCES citas_servicios(id) 
+ON DELETE SET NULL
+ON UPDATE CASCADE;
+
+-- 3. Índices para optimización
+CREATE INDEX idx_cita_estado_pago ON citas_servicios(estado_pago);
+CREATE INDEX idx_cita_orden_id ON citas_servicios(orden_id);
+CREATE INDEX idx_orden_cita_id ON ordenes(cita_servicio_id);
+
+FLUJO COMPLETO:
+1. Usuario agenda cita desde ServicioDetail
+2. Modal muestra confirmación con opciones de pago
+3. Al elegir "Pagar Ahora":
+   - Servicio se agrega al carrito con metadata (cita_id, fecha)
+   - Redirige a /checkout
+4. Backend crea orden y PaymentIntent en Stripe
+5. Usuario completa pago con tarjeta
+6. Webhook de Stripe actualiza:
+   - Estado de orden: pagado/completada
+   - Estado de cita: pagado
+   - Vincula orden_id con cita_servicio_id
+
+CORRECCIÓN CRÍTICA:
+- Bug: Se cobraba 100x el precio ($250 → $25,000)
+- Causa: Doble conversión a centavos (frontend y backend)
+- Solución: Remover multiplicación por 100 en PaymentsController.js línea 30
+- Estado: RESUELTO 
+
+-------------------------------------------------------------------
+NOVIEMBRE 21, 2025 - PASARELA DE PAGOS Y FACTURACIÓN
+-------------------------------------------------------------------
+
+✓ Integración completa de Stripe para pagos
+✓ Sistema de pago antes de agendar servicios
+✓ Generación automática de facturas post-pago
+✓ Webhooks de Stripe para actualización de estados
+✓ Creación automática de citas al pagar servicios
+✓ Redirección automática a factura después del pago
+
+FUNCIONALIDADES IMPLEMENTADAS:
+
+1. PASARELA DE PAGOS STRIPE
+   - Endpoint: POST /api/payments/create-payment-intent
+   - Proceso: Orden → PaymentIntent → Pago → Webhook
+   - Tarjetas de prueba: 4242 4242 4242 4242
+   
+2. FLUJO DE PAGO PARA SERVICIOS
+   - Usuario selecciona servicio
+   - Agenda fecha/hora en modal
+   - Redirige a checkout
+   - Paga con tarjeta
+   - Sistema crea orden, cita y factura automáticamente
+
+3. SISTEMA DE FACTURAS
+   - Componente: Factura.jsx
+   - Endpoint sin autenticación: GET /api/ordenes/:id
+   - Muestra: empresa, orden, items, total, método de pago
+   - Funciones: imprimir factura, volver al inicio
+
+4. WEBHOOKS STRIPE
+   - Endpoint: POST /api/payments/webhook
+   - Eventos: payment_intent.succeeded
+   - Acciones: actualiza estado_pago, crea cita automáticamente
+   - Firma verificada con STRIPE_WEBHOOK_SECRET
+
+5. MODIFICACIONES BACKEND
+   - StripeContext: retorna {clientSecret, ordenId, numeroOrden}
+   - Ordenes.js: GET /:id sin middleware viewAuth
+   - OrdenesController: validación condicional de permisos
+   - PaymentsController: webhook handler y payment intent
+
+6. MODIFICACIONES FRONTEND
+   - Checkout.jsx: navigate directo a factura (sin alert)
+   - Factura.jsx: componente completo de factura
+   - StripeContext.jsx: retorna objeto completo del backend
+   - AgendarServicioModal.jsx: pasa citaData al carrito
+
+SCRIPTS SQL APLICADOS:
+
+-- Agregar campos Stripe a tabla ordenes
+ALTER TABLE `ordenes`
+ADD COLUMN `stripe_payment_intent_id` VARCHAR(255) DEFAULT NULL AFTER `estado_pago`,
+ADD COLUMN `fecha_pago` TIMESTAMP NULL DEFAULT NULL AFTER `stripe_payment_intent_id`;
+
+-- Agregar índice para búsqueda por payment intent
+ALTER TABLE `ordenes`
+ADD INDEX `idx_stripe_payment_intent` (`stripe_payment_intent_id`);
+
+-- Actualizar ordenes existentes con estado correcto
+UPDATE `ordenes` SET `estado_pago` = 'pagado' 
+WHERE `stripe_payment_intent_id` IS NOT NULL;
+
+COMANDOS STRIPE CLI:
+
+# Escuchar webhooks localmente
+stripe listen --forward-to localhost:8080/api/payments/webhook
+
+# Login a Stripe
+stripe login
+
+# Ver eventos en tiempo real
+stripe events list
+
+VARIABLES DE ENTORNO REQUERIDAS (.env backend):
+
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+ENDPOINTS API:
+
+POST /api/payments/create-payment-intent
+- Body: { amount, currency, metadata }
+- Response: { clientSecret, ordenId, numeroOrden }
+
+POST /api/payments/webhook
+- Headers: stripe-signature
+- Body: Stripe event object
+- Response: { received: true }
+
+GET /api/ordenes/:id
+- Sin autenticación (público)
+- Response: { success, data: {orden con items} }
+
+ARCHIVOS MODIFICADOS:
+
+Backend:
+- backend/controllers/PaymentsController.js (NUEVO)
+- backend/routes/Payments.js (NUEVO)
+- backend/routes/Ordenes.js
+- backend/controllers/OrdenesController.js
+- backend/server.js (agregado express.raw para webhooks)
+
+Frontend:
+- fronted/src/pages/Factura.jsx (NUEVO)
+- fronted/src/styles/Factura.css (NUEVO)
+- fronted/src/pages/Checkout.jsx
+- fronted/src/utils/StripeContext.jsx
+- fronted/src/components/AgendarServicioModal.jsx
+- fronted/src/App.jsx (nueva ruta /factura/:id)
+
+=================================================================
+SERVICIOS DE EJEMPLO PARA PRUEBAS
+=================================================================
+
+-- Servicios Básicos (6 servicios)
+
+INSERT INTO servicios (nombre, tipo, precio, descripcion, imagen_url, activo) VALUES
+('Instalación de Windows/Linux', 'basico', 299.00,
+'Instalación limpia de sistema operativo. Incluye drivers, actualizaciones, antivirus y configuración inicial.',
+'https://images.unsplash.com/photo-1629654297299-c8506221ca97?w=800&q=80', 1);
+
+INSERT INTO servicios (nombre, tipo, precio, descripcion, imagen_url, activo) VALUES
+('Limpieza y Mantenimiento', 'basico', 199.00,
+'Limpieza física de componentes, eliminación de archivos temporales y optimización del sistema.',
+'https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=800&q=80', 1);
+
+INSERT INTO servicios (nombre, tipo, precio, descripcion, imagen_url, activo) VALUES
+('Instalación Office y Programas', 'basico', 249.00,
+'Instalación de Office, navegadores, reproductores y programas esenciales.',
+'https://images.unsplash.com/photo-1551808525-51a94da548ce?w=800&q=80', 1);
+
+INSERT INTO servicios (nombre, tipo, precio, descripcion, imagen_url, activo) VALUES
+('Diagnóstico Completo', 'basico', 149.00,
+'Diagnóstico de hardware y software con reporte detallado de problemas.',
+'https://images.unsplash.com/photo-1591405351990-4726e331f141?w=800&q=80', 1);
+
+INSERT INTO servicios (nombre, tipo, precio, descripcion, imagen_url, activo) VALUES
+('Configuración Router WiFi', 'basico', 199.00,
+'Configuración de router, contraseñas, seguridad WPA3 y optimización de canales.',
+'https://images.unsplash.com/photo-1606904825846-647eb07f5be2?w=800&q=80', 1);
+
+INSERT INTO servicios (nombre, tipo, precio, descripcion, imagen_url, activo) VALUES
+('Respaldo de Datos', 'basico', 299.00,
+'Backup completo de documentos, fotos y archivos a disco externo o nube.',
+'https://images.unsplash.com/photo-1544654803-b69140b285a1?w=800&q=80', 1);
+
+-- Servicios Avanzados (6 servicios)
+
+INSERT INTO servicios (nombre, tipo, precio, descripcion, imagen_url, activo) VALUES
+('Ensamblaje PC Gaming', 'avanzado', 1499.00,
+'Armado profesional de PC gaming con selección de componentes, cable management y overclock.',
+'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=800&q=80', 1);
+
+INSERT INTO servicios (nombre, tipo, precio, descripcion, imagen_url, activo) VALUES
+('Reparación Avanzada Laptops', 'avanzado', 899.00,
+'Reballing GPU/CPU, cambio de pantalla LED/OLED, upgrade SSD NVMe y expansión RAM.',
+'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=800&q=80', 1);
+
+INSERT INTO servicios (nombre, tipo, precio, descripcion, imagen_url, activo) VALUES
+('Recuperación de Datos Pro', 'avanzado', 1299.00,
+'Recuperación de discos duros, SSD, RAID y tarjetas SD con software forense.',
+'https://images.unsplash.com/photo-1633265486064-086b219458ec?w=800&q=80', 1);
+
+INSERT INTO servicios (nombre, tipo, precio, descripcion, imagen_url, activo) VALUES
+('Red Empresarial Completa', 'avanzado', 2499.00,
+'Cableado Cat6/Cat7, switches administrables, WiFi 6, servidor y firewall.',
+'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&q=80', 1);
+
+INSERT INTO servicios (nombre, tipo, precio, descripcion, imagen_url, activo) VALUES
+('Servidor Windows/Linux', 'avanzado', 1899.00,
+'Active Directory, DNS, DHCP, File Server, políticas de grupo y backups.',
+'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=800&q=80', 1);
+
+INSERT INTO servicios (nombre, tipo, precio, descripcion, imagen_url, activo) VALUES
+('Soporte Técnico Mensual', 'avanzado', 999.00,
+'Soporte 24/7, 3 visitas incluidas, mantenimiento preventivo y monitoreo remoto.',
+'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80', 1);
+
+-- Agregar imágenes adicionales a servicio (ejemplo ID 1)
+
+INSERT INTO servicio_imagenes (servicio_id, url, alt_text, orden, es_principal) VALUES
+(1, 'https://images.unsplash.com/photo-1629654297299-c8506221ca97?w=800&q=80', 'Instalación Windows', 0, 1),
+(1, 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80', 'Configuración sistema', 1, 0),
+(1, 'https://images.unsplash.com/photo-1551808525-51a94da548ce?w=800&q=80', 'Escritorio listo', 2, 0);
+
+-- Verificar servicios insertados
+
+SELECT id, nombre, tipo, CONCAT('$', precio) as precio, activo 
+FROM servicios 
+ORDER BY tipo, precio;
+
+-- Contar servicios por tipo
+
+SELECT tipo, COUNT(*) as total, CONCAT('$', MIN(precio)) as min, CONCAT('$', MAX(precio)) as max
+FROM servicios
+WHERE activo = 1
+GROUP BY tipo;
+
+
+=================================================================
+Sistema de Pagos Completo y Funcional
+=================================================================
+
+en la base de datos se agregó la columna cita_servicio_id INT(11) NULL a la tabla ordenes con su respectiva foreign key hacia citas_servicios,
+se agregó la columna servicio_id INT(11) NULL a la tabla orden_items con foreign key hacia servicios y su índice correspondiente,
+se modificó el ENUM de la columna tipo en ordenes para incluir el valor 'mixto' además de 'producto' y 'servicio',
+permitiendo registrar órdenes que contengan ambos tipos de items; en el backend se actualizó PaymentsController.js para crear órdenes antes de generar el PaymentIntent,
+detectar automáticamente el tipo de orden (producto, servicio o mixto) analizando todos los items del carrito,
+insertar correctamente los items diferenciando entre producto_id y servicio_id según corresponda,
+y crear automáticamente citas de servicio cuando se detectan en el metadata del pago; se modificaron los modelos Ordenes.js y OrdenItems.js para soportar las nuevas columnas cita_servicio_id y servicio_id respectivamente,
+agregando las validaciones necesarias y actualizando todos los queries con LEFT JOINs a la tabla servicios para traer información completa;
+se actualizaron todos los DTOs (OrdenCreateDTO, OrdenUpdateDTO, OrdenItemCreateDTO, OrdenItemResponseDTO) para incluir y validar los nuevos campos,
+aceptando 'mixto' como tipo válido de orden y requiriendo servicio_id cuando el tipo sea 'servicio';
+se corrigieron errores en OrdenItemsService.js donde la validación de errores estaba mal implementada con !errors.length>0 cuando debía ser errors.length > 0;
+se actualizó el modelo CitaServicio.js para aceptar tanto los nombres de campos con sufijo _cliente y _cita como sin sufijos, usando operadores OR como fallback para mayor flexibilidad;
+y se configuró el webhook de Stripe para que al recibir el evento payment_intent.succeeded actualice automáticamente el estado de la orden a 'pagado' y 'completada',
+cree la cita de servicio si existe metadata de cita, y vincule bidireccionalmente la orden con la cita mediante cita_servicio_id y orden_id,
+todo funcionando de forma sincronizada entre frontend React con Stripe Elements, backend Node.js/Express, webhooks de Stripe y base de datos MySQL.
+
+=================================================================
+FIN DE DOCUMENTACIÓN
+=================================================================
+

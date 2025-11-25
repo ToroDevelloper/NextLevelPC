@@ -1,0 +1,74 @@
+<%
+  title = 'Dashboard de Servicios';
+  currentPage = 'dashboard';
+%>
+
+<div class="container-fluid px-4 py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h3 mb-1">
+        <i class="fas fa-tools me-2"></i>
+        Servicios solicitados
+      </h1>
+      <p class="text-muted mb-0">Citas de servicio a domicilio y en tienda</p>
+    </div>
+  </div>
+
+  <% if (citas && citas.length > 0) { %>
+    <div class="card shadow-sm">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+          <i class="fas fa-list me-2"></i>
+          Citas registradas
+        </h5>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Cliente</th>
+                <th>Email</th>
+                <th>Teléfono</th>
+                <th>Servicio</th>
+                <th>Dirección</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% citas.forEach(cita => { %>
+                <tr>
+                  <td><strong><%= cita.nombre_cliente %></strong></td>
+                  <td><%= cita.email_cliente %></td>
+                  <td><%= cita.telefono_cliente %></td>
+                  <td><%= cita.servicio_nombre %></td>
+                  <td><small><%= cita.direccion_cliente %></small></td>
+                  <td><small><%= new Date(cita.fecha_cita).toLocaleString('es-ES') %></small></td>
+                  <td>
+                    <% const estadoClass = {
+                      'pendiente': 'bg-warning text-dark',
+                      'confirmada': 'bg-info text-white',
+                      'completada': 'bg-success text-white',
+                      'cancelada': 'bg-danger text-white'
+                    }[cita.estado] || 'bg-secondary text-white'; %>
+                    <span class="badge <%= estadoClass %>">
+                      <%= cita.estado %>
+                    </span>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  <% } else { %>
+    <div class="text-center py-5">
+      <i class="fas fa-calendar-times fa-4x text-muted mb-3"></i>
+      <h4 class="text-muted">No hay citas registradas</h4>
+      <p class="text-muted mb-0">Cuando los clientes soliciten servicios, aparecerán aquí.</p>
+    </div>
+  <% } %>
+</div>
+

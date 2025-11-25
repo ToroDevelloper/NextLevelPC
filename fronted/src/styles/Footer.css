@@ -1,0 +1,137 @@
+.footer {
+  background-color: #111111;
+  color: #e5e7eb;
+  padding: 1.5rem 0 1rem;
+  margin-top: auto;
+}
+
+.footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.footer-content {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+  align-items: start;
+}
+
+.footer-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.footer-logo {
+  width: 120px;
+  height: auto;
+  margin-bottom: 0.3rem;
+}
+
+.footer-message {
+  color: #9ca3af;
+  line-height: 1.4;
+  font-size: 0.85rem;
+  font-style: italic;
+  max-width: 280px;
+}
+
+.footer-contact h4,
+.footer-social h4 {
+  color: #f9fafb;
+  margin-bottom: 0.8rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  position: relative;
+}
+
+.footer-contact h4::after,
+.footer-social h4::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  width: 25px;
+  height: 2px;
+  background-color: #10b981;
+}
+
+.contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #d1d5db;
+  font-size: 0.8rem;
+  min-width: 180px;
+}
+
+.social-links {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+}
+
+.social-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background-color: #2d2d2d;
+  border-radius: 6px;
+  color: #10b981;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border: 1px solid #374151;
+  font-size: 1rem;
+}
+
+.social-link:hover {
+  background-color: #10b981;
+  color: #111111;
+  transform: translateY(-1px);
+}
+
+.footer-bottom {
+  border-top: 1px solid #333;
+  padding-top: 0.8rem;
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.75rem;
+}
+
+@media (max-width: 768px) {
+  .footer-content {
+    grid-template-columns: 1fr;
+    gap: 1.2rem;
+    text-align: center;
+  }
+  
+  .footer-message {
+    max-width: none;
+  }
+  
+  .footer-contact h4::after,
+  .footer-social h4::after {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  
+  .social-links {
+    justify-content: center;
+  }
+  
+  .contact-item {
+    min-width: auto;
+    justify-content: center;
+  }
+}
