@@ -11,9 +11,13 @@ router.get('/', async (req, res) =>{
         try {
             const ordenes = await ordenesService.obtenerTodos();
             res.render('ordenes/list', { 
-                ordenes: ordenes,
-                message: req.query.message,
-                error: req.query.error
+title: 'Gestión de Órdenes',
+  currentPage: 'ordenes',
+  ordenes,
+  busqueda: req.query.busqueda || '', 
+  estadoSeleccionado: req.query.estado || '',
+  message: req.query.message,
+  error: req.query.error
             });
         } catch (error) {
             res.render('ordenes/list', { 
@@ -25,7 +29,7 @@ router.get('/', async (req, res) =>{
 router.get('/create', async (req, res) =>{
         try {
             // Obtener clientes para el dropdown
-            const clientes = await UsuariosService.obtenerTodos(); // Ajusta según tu servicio
+            const clientes = await UsuariosService.obtenerTodos();
             res.render('ordenes/create', { 
                 clientes: clientes,
                 error: req.query.error
@@ -114,5 +118,25 @@ router.post('/update/:id',async (req, res) =>{
             res.redirect('/ordenes/edit/' + id + '?error=' + encodeURIComponent(error.message));
         }
     });
+
+    // ELIMINAR ORDEN
+router.post('/delete/:id', async (req, res) => {
+    try {
+        const id = req.params.id;
+
+        //validar que la orden existe
+        const orden = await ordenesService.obtenerPorId(id);
+        if (!orden) {
+            return res.redirect('/ordenes?error=Orden no encontrada');
+        }
+
+        // Eliminar la orden 
+        await ordenesService.eliminar(id);
+
+        res.redirect('/ordenes?message=Orden eliminada exitosamente');
+    } catch (error) {
+        res.redirect('/ordenes?error=' + encodeURIComponent(error.message));
+    }
+});
 
 module.exports = router;

@@ -8,6 +8,8 @@ router.post('/', citaServicioController.create);
 
 // Solo admin y empleado pueden ver las citas
 router.get('/', viewAuth(['admin', 'empleado']), citaServicioController.getAll);
-router.put('/:id/estado', viewAuth(['admin', 'empleado']), citaServicioController.updateStatus);
+router.patch('/:id',viewAuth(['admin', 'empleado']), citaServicioController.actualizar)
+router.patch('/:id/estado', viewAuth(['admin', 'empleado']), citaServicioController.updateStatus);
+router.delete('/:id', viewAuth(['admin', 'empleado']), citaServicioController.deleteCita);
 
 module.exports = router;

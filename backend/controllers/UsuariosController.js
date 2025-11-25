@@ -188,6 +188,16 @@ class UsuariosController {
             });
         }
     }
+
+    static async obtenerRoles(req,res){
+        try {
+            const usuarios = await UsuariosService.obtenerRoles();
+            res.status(200).json({usuarios})
+        } catch (error) {
+            console.error('Error al obtener usuarios: ',error.message)
+            res.status(500).json({message:'Ocurrio un error al obtener usuarios'})
+        }
+    }
 }
 
 module.exports = UsuariosController;

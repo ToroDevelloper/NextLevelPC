@@ -86,6 +86,14 @@ class UsuariosService {
         return await Usuarios.eliminar(id);
     }
 
+    static async obtenerRoles(){
+        const usuarios = await Usuarios.obtenerRoles();
+        if(!usuarios){
+            throw new Error('Ocurrio un errror al obtener los usuarios')
+        }
+        return usuarios;
+    }
+
     static async login(data) {
         const dto = new LoginDTO(data);
         const errores = dto.validate();

@@ -79,11 +79,9 @@
         });
     </script>
 
-    <!-- Scripts Específicos de cada Vista -->
-    <% if (typeof scripts !== 'undefined') { %>
-        <script>
-            <%- scripts %>
-        </script>
+    <!-- Script específico de la vista si existe -->
+    <% if (typeof currentPage !== 'undefined') { %>
+        <script src="/js/<%= currentPage %>.list.js"></script>
     <% } %>
 </body>
 </html>
