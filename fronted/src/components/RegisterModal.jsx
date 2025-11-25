@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuthModal } from '../contexts/AuthContext';
+import API_BASE_URL from '../config/api';
 import '../styles/login.css';
 
 const IconX = () => (
@@ -41,7 +42,7 @@ const RegisterModal = ({ onClose }) => {
 
         setLoading(true);
         try {
-            const res = await fetch('/api/usuarios/registro', {
+            const res = await fetch(`${API_BASE_URL}/api/usuarios/registro`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

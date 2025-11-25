@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import '../styles/Factura.css';
+import API_BASE_URL from '../config/api';
 
 const Factura = () => {
     const { id } = useParams();
@@ -19,7 +20,7 @@ const Factura = () => {
                 setLoading(true);
                 console.log('Fetching orden con ID:', id);
 
-                const response = await fetch(`/api/ordenes/${id}`, {
+                const response = await fetch(`${API_BASE_URL}/api/ordenes/${id}`, {
                     method: 'GET',
                     credentials: 'include',
                     headers: {

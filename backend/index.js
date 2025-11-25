@@ -33,8 +33,23 @@ app.use('/api/payments/webhook',
 );
 
 // Middlewares
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://localhost:5174',
+    process.env.FRONTEND_URL // URL de producción en Netlify
+].filter(Boolean);
+
 app.use(cors({
-    origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:5174'],
+    origin: function (origin, callback) {
+        // Permitir peticiones sin origen (como apps móviles o curl)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) === -1) {
+            const msg = 'La política CORS para este sitio no permite el acceso desde el origen especificado.';
+            return callback(new Error(msg), false);
+        }
+        return callback(null, true);
+    },
     credentials: true
 }));
 app.use(express.json());

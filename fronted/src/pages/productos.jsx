@@ -4,7 +4,9 @@ import { useCart } from '../utils/CartContext';
 import "../styles/Productos.css";
 
 // --- Constantes ---
-const API_BASE = '';
+import API_BASE_URL from '../config/api';
+
+const API_BASE = API_BASE_URL;
 const DEFAULT_IMAGE = 'https://placehold.co/600x400/EEE/31343C?text=Producto';
 const PRODUCT_DEFAULTS = {
   description: 'Producto disponible en NextLevelPC.',

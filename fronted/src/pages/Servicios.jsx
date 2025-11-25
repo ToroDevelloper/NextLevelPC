@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import '../styles/Servicios.css';
 import AgendarServicioModal from '../components/AgendarServicioModal';
 
-const API_BASE = '';
+import API_BASE_URL from '../config/api';
 
 const Servicios = () => {
     const [servicios, setServicios] = useState([]);
@@ -33,7 +33,7 @@ const Servicios = () => {
     const handleSubmitModal = async (formData) => {
         if (!servicioSeleccionado) return;
         try {
-            const response = await fetch(`${API_BASE}/api/citas-servicios`, {
+            const response = await fetch(`${API_BASE_URL}/api/citas-servicios`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -67,7 +67,7 @@ const Servicios = () => {
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch(`${API_BASE}/api/servicios`);
+            const res = await fetch(`${API_BASE_URL}/api/servicios`);
             if (!res.ok) {
                 throw new Error(`HTTP ${res.status}`);
             }
@@ -90,10 +90,10 @@ const Servicios = () => {
         setError(null);
 
         try {
-            let url = `${API_BASE}/api/servicios`;
+            let url = `${API_BASE_URL}/api/servicios`;
 
             if (tipo !== 'todos') {
-                url = `${API_BASE}/api/servicios/tipo/${tipo}`;
+                url = `${API_BASE_URL}/api/servicios/tipo/${tipo}`;
             }
 
             const res = await fetch(url);

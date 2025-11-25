@@ -29,6 +29,7 @@ import { useCart } from "./utils/CartContext";
 // Styles
 import './styles/Global.css';
 import './styles/TransicionBienvenida.css';
+import API_BASE_URL from './config/api';
 
 function App() {
     const { cartItems } = useCart();
@@ -36,7 +37,7 @@ function App() {
     const location = useLocation();
 
     useEffect(() => {
-        fetch('/api/health')
+        fetch(`${API_BASE_URL}/api/health`)
             .then(res => res.json())
             .then(data => {
                 console.log('Backend OK:', data.message);

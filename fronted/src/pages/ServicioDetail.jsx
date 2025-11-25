@@ -5,7 +5,9 @@ import AgendarServicioModal from '../components/AgendarServicioModal'; // Import
 import { useAuth } from '../utils/AuthContext';
 import { useCart } from '../utils/CartContext';
 
-const API_BASE = 'http://localhost:8080';
+import API_BASE_URL from '../config/api';
+
+const API_BASE = API_BASE_URL;
 
 const ServicioDetail = () => {
     const { id } = useParams();

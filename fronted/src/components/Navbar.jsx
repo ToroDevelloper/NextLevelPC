@@ -4,6 +4,7 @@ import '../styles/Navbar.css';
 import { useCart } from '../utils/CartContext';
 import { useAuth } from '../utils/AuthContext';
 import { useAuthModal } from '../contexts/AuthContext';
+import API_BASE_URL from '../config/api';
 
 // Íconos SVG
 const IconCart = () => (
@@ -70,7 +71,7 @@ const Navbar = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch('/api/categorias/producto');
+        const response = await fetch(`${API_BASE_URL}/api/categorias/producto`);
         if (!response.ok) {
           setCategories([
             { id: '1', nombre: 'Hardware' },

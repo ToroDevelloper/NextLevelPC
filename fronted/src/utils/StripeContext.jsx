@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState } from "react";
 import { loadStripe } from "@stripe/stripe-js";
+import API_BASE_URL from '../config/api';
 
 const StripeContext = createContext();
 
@@ -23,7 +24,7 @@ export const StripeProvider = ({ children }) => {
                 throw new Error(`Monto insuficiente. El mínimo es $20,000 COP.`);
             }
 
-            const res = await fetch("/api/payments/create-payment-intent", {
+            const res = await fetch(`${API_BASE_URL}/api/payments/create-payment-intent`, {
                 method: "POST",
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },

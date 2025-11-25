@@ -4,7 +4,9 @@ import '../styles/Home.css';
 import '../styles/Productos.css';
 import { useCart } from '../utils/CartContext';
 
-const API_BASE = '';
+import API_BASE_URL from '../config/api';
+
+const API_BASE = API_BASE_URL;
 
 const Home = () => {
    

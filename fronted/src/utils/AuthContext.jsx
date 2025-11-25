@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { jwtDecode } from 'jwt-decode';
-import Cookies from 'js-cookie'; 
+import Cookies from 'js-cookie';
+import API_BASE_URL from '../config/api';
 
 const AuthContext = createContext(null);
 
@@ -69,9 +70,9 @@ export const AuthProvider = ({ children }) => {
     const logout = (shouldRedirect = true) => {
         Cookies.remove('accessToken', { path: '/' });
         
-        fetch('/api/usuarios/logout', {
-            method: 'POST', 
-            credentials: 'include' 
+        fetch(`${API_BASE_URL}/api/usuarios/logout`, {
+            method: 'POST',
+            credentials: 'include'
         }).catch(err => console.error('Error al llamar a logout:', err));
 
         setIsAuthenticated(false);

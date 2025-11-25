@@ -2,9 +2,11 @@
  * Llama al endpoint de refresco para obtener un nuevo Access Token.
  * @returns {Promise<string>} El nuevo Access Token.
  */
+import API_BASE_URL from '../config/api';
+
 const refreshAccessToken = async () => {
     try {
-        const response = await fetch('/api/usuarios/refresh', {
+        const response = await fetch(`${API_BASE_URL}/api/usuarios/refresh`, {
             method: 'POST',
         });
 
