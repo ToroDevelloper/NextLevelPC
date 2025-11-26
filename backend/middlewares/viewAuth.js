@@ -15,20 +15,31 @@ function viewAuth(rolesPermitidos = []) {
       const token = headerToken || cookieToken;
 
       if (!token) {
-        return res.status(401).send('No autorizado. Inicia sesión para acceder a esta página.');
+        // Si la petición espera JSON (API), devolver JSON. Si es navegador, podría redirigir.
+        // Por simplicidad y consistencia con la API, devolvemos JSON.
+        return res.status(401).json({
+            success: false,
+            mensaje: 'No autorizado. Inicia sesión para continuar.'
+        });
       }
 
       const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET || 'fallback_access_key');
       req.usuario = decoded;
 
       if (rolesPermitidos.length && !rolesPermitidos.includes(decoded.rol)) {
-        return res.status(403).send('No tienes permisos para acceder a esta página.');
+        return res.status(403).json({
+            success: false,
+            mensaje: 'No tienes permisos para realizar esta acción.'
+        });
       }
 
       next();
     } catch (err) {
       console.error('Error en viewAuth:', err.message);
-      return res.status(401).send('Sesión inválida o expirada. Vuelve a iniciar sesión.');
+      return res.status(401).json({
+          success: false,
+          mensaje: 'Sesión inválida o expirada. Vuelve a iniciar sesión.'
+      });
     }
   };
 }

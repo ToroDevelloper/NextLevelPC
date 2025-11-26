@@ -33,7 +33,7 @@ class UsuariosController {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
                 maxAge: 7 * 24 * 60 * 60 * 1000,
-                sameSite: 'strict', 
+                sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
                 path: '/'
             });
 
@@ -42,7 +42,7 @@ class UsuariosController {
                 httpOnly: false,
                 secure: process.env.NODE_ENV === 'production',
                 maxAge: 60 * 60 * 1000, // 1 hora
-                sameSite: 'lax',
+                sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
                 path: '/'
             });
 
