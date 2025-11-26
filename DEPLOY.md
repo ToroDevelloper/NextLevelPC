@@ -164,3 +164,9 @@ Si ves errores en la consola como `ERR_BLOCKED_BY_CLIENT` relacionados con `stri
 Si recibes errores 401 al intentar pagar o acceder a rutas protegidas, a pesar de haber iniciado sesión:
 *   **Causa:** Las cookies de sesión pueden estar siendo bloqueadas por el navegador debido a políticas de seguridad Cross-Site (Frontend en Netlify y Backend en Render son dominios diferentes).
 *   **Solución:** Hemos configurado las cookies con `SameSite: None` y `Secure: true` para producción. Asegúrate de que tu backend en Render tenga la variable `NODE_ENV` establecida en `production`.
+
+### 6. Cookies y HTTPS
+Si las cookies de sesión no se guardan o recibes errores 401:
+*   **Importante:** En producción, las cookies están configuradas como `Secure`. Esto significa que **SOLO se enviarán a través de conexiones HTTPS**.
+*   Si intentas conectar tu frontend en `localhost` (HTTP) con el backend en Render (HTTPS), las cookies **NO funcionarán** y no podrás iniciar sesión ni pagar.
+*   **Solución:** Realiza las pruebas finales desde el frontend desplegado en Netlify (que usa HTTPS).

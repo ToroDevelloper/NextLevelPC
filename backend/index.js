@@ -27,6 +27,9 @@ const { testConnection } = require('./config/db');
 
 const app = express();
 
+// Confiar en el proxy de Render para que las cookies seguras funcionen
+app.set('trust proxy', 1);
+
 //WEBHOOK PRIMERO - ANTES DE express.json()
 app.use('/api/payments/webhook', 
   express.raw({ type: 'application/json' })
