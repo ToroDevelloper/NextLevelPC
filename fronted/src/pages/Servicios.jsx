@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../styles/Servicios.css';
 import AgendarServicioModal from '../components/AgendarServicioModal';
+import { useAuth } from '../utils/AuthContext';
+import { useCart } from '../utils/CartContext';
 import { getImageUrl, handleImageError } from '../utils/imageHelper';
 import API_BASE_URL from '../config/api';
 
@@ -14,6 +16,8 @@ const Servicios = () => {
     const [servicioSeleccionado, setServicioSeleccionado] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const navigate = useNavigate();
+    const { addToCart } = useCart();
+    const { isAuthenticated } = useAuth();
 
     const handleCardClick = (id) => {
         navigate(`/servicios/${id}`);
@@ -30,37 +34,55 @@ const Servicios = () => {
         setServicioSeleccionado(null);
     };
 
-    const handleSubmitModal = async (formData) => {
-        if (!servicioSeleccionado) return;
+    const handleSubmitModal = (formData) => {
+        if (!isAuthenticated) {
+            alert('Debes iniciar sesión para agendar una cita de servicio.');
+            return { success: false };
+        }
+
+        if (!servicioSeleccionado) {
+            return { success: false };
+        }
+
         try {
-            const response = await fetch(`${API_BASE_URL}/api/citas-servicios`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    ...formData,
-                    servicio_id: servicioSeleccionado.id,
-                }),
-            });
+            // Construir objeto del servicio con datos de la cita
+            const servicioConCita = {
+                id: servicioSeleccionado.id,
+                nombre: servicioSeleccionado.nombre,
+                precio: servicioSeleccionado.precio,
+                imagen: servicioSeleccionado.imagen_url,
+                type: 'servicio',
+                cantidad: 1,
+                // Metadata de la cita para procesar después del pago
+                citaData: {
+                    nombre_cliente: formData.nombre,
+                    email_cliente: formData.email,
+                    telefono_cliente: formData.telefono,
+                    direccion_cliente: formData.direccion,
+                    fecha_cita: formData.fecha_cita,
+                    descripcion_problema: formData.descripcion_problema
+                }
+            };
 
-            const result = await response.json();
+            // Agregar al carrito
+            addToCart(servicioConCita);
 
-            if (response.ok && result.success) {
-                alert('¡Cita agendada con éxito! Nos pondremos en contacto contigo pronto.');
-                setIsModalOpen(false);
-                setServicioSeleccionado(null);
-            } else {
-                throw new Error(result.message || 'No se pudo agendar la cita.');
-            }
+            // Cerrar modal y redirigir al checkout
+            setIsModalOpen(false);
+            setServicioSeleccionado(null);
+            navigate('/checkout');
+
+            return { success: true };
         } catch (error) {
-            console.error('Error al enviar el formulario:', error);
+            console.error('Error al procesar la solicitud:', error);
             alert(`Error: ${error.message}`);
+            return { success: false };
         }
     };
 
     useEffect(() => {
         fetchTodosLosServicios();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchTodosLosServicios = async () => {
@@ -161,8 +183,11 @@ const Servicios = () => {
             {/* Lista de servicios - MANTENIENDO EL ESTILO ORIGINAL */}
             <div className="servicios-content">
                 <h3 className="servicios-subtitle">
-                    {filtroActivo === 'todos' ? 'Todos los Servicios' :
-                        filtroActivo === 'basico' ? 'Servicios Básicos' : 'Servicios Avanzados'}
+                    {filtroActivo === 'todos'
+                        ? 'Todos los Servicios'
+                        : filtroActivo === 'basico'
+                            ? 'Servicios Básicos'
+                            : 'Servicios Avanzados'}
                 </h3>
 
                 {loading && <p className="loading-message">Cargando servicios...</p>}
@@ -179,7 +204,11 @@ const Servicios = () => {
 
                 <div className="servicios-grid">
                     {serviciosFiltrados.map(servicio => (
-                        <div key={servicio.id} className="servicio-card-link" onClick={() => handleCardClick(servicio.id)}>
+                        <div
+                            key={servicio.id}
+                            className="servicio-card-link"
+                            onClick={() => handleCardClick(servicio.id)}
+                        >
                             <div className="servicio-card">
                                 <img
                                     src={getImageUrl(servicio.imagen_url)}
@@ -191,7 +220,8 @@ const Servicios = () => {
                                     <h3>{servicio.nombre}</h3>
                                     {servicio.descripcion && (
                                         <p className="servicio-descripcion">
-                                            {servicio.descripcion.substring(0, 100)}{servicio.descripcion.length > 100 && '...'}
+                                            {servicio.descripcion.substring(0, 100)}
+                                            {servicio.descripcion.length > 100 && '...'}
                                         </p>
                                     )}
                                     <p className="servicio-precio">
@@ -213,6 +243,7 @@ const Servicios = () => {
 
             {isModalOpen && servicioSeleccionado && (
                 <AgendarServicioModal
+                    isOpen={isModalOpen}
                     servicio={servicioSeleccionado}
                     onClose={handleCloseModal}
                     onSubmit={handleSubmitModal}
