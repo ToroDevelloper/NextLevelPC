@@ -1135,6 +1135,50 @@ y se configuró el webhook de Stripe para que al recibir el evento payment_inten
 cree la cita de servicio si existe metadata de cita, y vincule bidireccionalmente la orden con la cita mediante cita_servicio_id y orden_id,
 todo funcionando de forma sincronizada entre frontend React con Stripe Elements, backend Node.js/Express, webhooks de Stripe y base de datos MySQL.
 
+
+=================================================================
+Implementación de albúm de imagenes en detalle producto.
+=================================================================
+Backend
+producto.js
+Antes... el método obtenerPorId tienia un filtro AND ip.es_principal = 1. Esto impide que lleguen las fotos secundarias.
+Se tuvo que modificar para hacer dos consultas (o un GROUP_CONCAT complejo, pero dos consultas es más limpio y manejable para arrays JSON)
+y devolver el producto con su array de imágenes completo.
+1. Obtenemos la info base del producto
+2. Obtenemos TODAS las imágenes asociadas a este producto y se ordena para que el principal 
+quede de primero.
+3. Adjuntamos las imágenes al objeto producto, el frontend espera 'imagenes' como array o 'imagen_principal' como string, (producto.imagenes = imagenesRows;)aplicamos un Array completo de objetos {url, es_principal} y por ultimo (producto.imagen_principal = imagenesRows.length > 0 ? imagenesRows[0].url : null;) Mantenemos retro-compatibilidad por si algo usa 'imagen_principal' directo.
+
+Fronend:
+Actualización de Productos.jsx
+Necesitamos modificar el componente ProductDetail. añadi un estado activeImage para cambiar la foto grande cuando el usuario pase el mouse por las miniaturas.
+Busca el componente ProductDetail dentro de productos.jsx y reemplázalo por este código actualizado.
+comenzamos modificando el componente ProductDetail existente
+(const [activeImage, setActiveImage] = useState(product.image);) nos ayuda a:
+De Estado para la imagen que se muestra en grande haciendo que iniciemos con la primera
+imagen normalizada
+Damos Efecto para actualizar la imagen si cambia el producto seleccionado (useEffect(() => {
+    setActiveImage(product.image);
+  }, [product]);) 
+Apliacamos un manejo de cantidades, luego Aseguramos que haya un array de imágenes para iterar.
+La función normalizeProduct ya debería habernos dado un array en 'product.imagenes'
+
+Producto.css
+Necesitamos reemplazar los estilos antiguos de product-detail-image-wrapper por una configuración
+Flexbox que ponga las miniaturas a la izquierda y la imagen grande a la derecha.
+
+Implementación Plus:
+Añadiremos un estado para controlar el modal (abrir/cerrar) y los estilos para que la imagen 
+ocupe la pantalla completa sobre un fondo oscuro.
+Zoom Modal:
+
+En productos.jsx, agregué el estado isModalOpen.
+
+Al hacer clic en la imagen principal, se activa el modal.
+
+El modal usa position: fixed y z-index alto para cubrir toda la pantalla con un fondo negro transparente
+ (rgba(0, 0, 0, 0.9)), centrándose en la imagen en alta resolución, idéntico al estilo de MercadoLibre/Autos que mostraste.
+
 =================================================================
 FIN DE DOCUMENTACIÓN
 =================================================================
