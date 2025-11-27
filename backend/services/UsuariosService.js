@@ -119,7 +119,7 @@ class UsuariosService {
         
         const accessToken = jwt.sign(payload, 
             process.env.JWT_ACCESS_SECRET || 'fallback_access_key', 
-            { expiresIn: '15m' } 
+            { expiresIn: '1h' } 
         );
 
         const REFRESH_TOKEN_EXPIRATION_DAYS = 7;
