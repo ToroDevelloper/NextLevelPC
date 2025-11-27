@@ -4,6 +4,7 @@ import '../styles/ServicioDetail.css';
 import AgendarServicioModal from '../components/AgendarServicioModal'; // Importar el modal
 import { useAuth } from '../utils/AuthContext';
 import { useCart } from '../utils/CartContext';
+import { getImageUrl, handleImageError } from '../utils/imageHelper';
 
 import API_BASE_URL from '../config/api';
 
@@ -86,14 +87,14 @@ const ServicioDetail = () => {
                     setServicio(json.data);
 
                     // Process gallery images from servicio_imagenes table
-                    if (json.data.galeria_imagenes && Array.isArray(json.data.galeria_imagenes)) {
-                        const urls = json.data.galeria_imagenes.map(img => `${API_BASE}/uploads/${img.url}`);
-                        setGalleryImages(urls.length > 0 ? urls : ['https://placehold.co/600x400/EEE/31343C?text=Servicio']);
+                    if (json.data.galeria_imagenes && Array.isArray(json.data.galeria_imagenes) && json.data.galeria_imagenes.length > 0) {
+                        const urls = json.data.galeria_imagenes.map(img => getImageUrl(img.url));
+                        setGalleryImages(urls);
                     } else if (json.data.imagen_url) {
                         // Fallback to imagen_url if no gallery images
-                        setGalleryImages([`${API_BASE}${json.data.imagen_url}`]);
+                        setGalleryImages([getImageUrl(json.data.imagen_url)]);
                     } else {
-                        setGalleryImages(['https://placehold.co/600x400/EEE/31343C?text=Servicio']);
+                        setGalleryImages([getImageUrl(null)]);
                     }
                 } else {
                     throw new Error(json.message || 'Error al cargar el servicio');
@@ -196,10 +197,7 @@ const ServicioDetail = () => {
                             src={galleryImages[selectedImage]}
                             alt={`${servicio.nombre} - Imagen ${selectedImage + 1}`}
                             className="servicio-detail-image"
-                            onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.src = 'https://placehold.co/600x400/EEE/31343C?text=Servicio';
-                            }}
+                            onError={handleImageError}
                         />
                     </div>
 
@@ -215,10 +213,7 @@ const ServicioDetail = () => {
                                     <img
                                         src={img}
                                         alt={`${servicio.nombre} - Miniatura ${index + 1}`}
-                                        onError={(e) => {
-                                            e.target.onerror = null;
-                                            e.target.src = 'https://placehold.co/100x100/EEE/31343C?text=Img';
-                                        }}
+                                        onError={handleImageError}
                                     />
                                 </button>
                             ))}
@@ -347,12 +342,9 @@ const ServicioDetail = () => {
                             >
                                 <div className="related-service-image">
                                     <img
-                                        src={rel.imagen_url ? `${API_BASE}${rel.imagen_url}` : 'https://placehold.co/600x400/EEE/31343C?text=Servicio'}
+                                        src={getImageUrl(rel.imagen_url)}
                                         alt={rel.nombre}
-                                        onError={(e) => {
-                                            e.target.onerror = null;
-                                            e.target.src = 'https://placehold.co/600x400/EEE/31343C?text=Servicio';
-                                        }}
+                                        onError={handleImageError}
                                     />
                                 </div>
                                 <div className="related-service-info">
