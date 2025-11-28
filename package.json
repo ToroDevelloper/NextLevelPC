@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "start": "npm start --prefix backend"
+  },
   "dependencies": {
     "jwt-decode": "^4.0.0",
     "react-router-dom": "^7.9.4"
