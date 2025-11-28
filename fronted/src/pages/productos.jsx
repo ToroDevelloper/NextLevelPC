@@ -293,104 +293,179 @@ const Pagination = React.memo(({ currentPage, totalPages, onPageChange }) => {
   );
 });
 
-/**
- * Componente para el detalle del producto.
- */
 const ProductDetail = React.memo(({ product, onAddToCart }) => {
   const [activeTab, setActiveTab] = useState('descripcion');
+  const [activeImage, setActiveImage] = useState(product.image);
+  
+  // NUEVO: Estado para controlar si el modal (Zoom) está abierto
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    setActiveImage(product.image);
+  }, [product]);
+
+  // Manejo de scroll del body cuando el modal está abierto
+  useEffect(() => {
+    if (isModalOpen) {
+      document.body.style.overflow = 'hidden'; // Evita scroll atrás
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [isModalOpen]);
 
   const handleDetailAddToCart = () => {
     const qtyInput = document.getElementById('product-detail-qty');
     const qty = Number(qtyInput?.value || 1);
     const safeQty = isNaN(qty) || qty <= 0 ? 1 : qty;
-
-    // Llama a la función onAddToCart con la cantidad
     onAddToCart(product, safeQty);
   };
 
-  const { nombre, price, stock, specs, description } = product;
+  const { nombre, price, stock, specs, description, imagenes } = product;
+
+  const galleryImages = Array.isArray(imagenes) && imagenes.length > 0 
+      ? imagenes 
+      : [{ url: product.image || 'https://placehold.co/600x400?text=Producto', es_principal: 1 }];
 
   return (
-    <div className="product-detail">
-      <div className="product-detail-main">
-        <div className="product-detail-image-wrapper">
-          <ProductImage product={product} className="product-detail-image" />
+    <>
+      <div className="product-detail">
+        <div className="product-detail-main">
+          
+          {/* GALERÍA */}
+          <div className="product-gallery-container">
+            
+            {/* Columna de Miniaturas (Ahora más altas/verticales por CSS) */}
+            <div className="product-thumbnails-col">
+              {galleryImages.map((img, index) => (
+                <div 
+                  key={index}
+                  className={`product-thumbnail-wrapper ${activeImage === img.url ? 'active' : ''}`}
+                  onMouseEnter={() => setActiveImage(img.url)}
+                  onClick={() => setActiveImage(img.url)}
+                >
+                  <img 
+                    src={img.url} 
+                    alt={`Vista ${index + 1}`} 
+                    className="product-thumbnail-img"
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* Imagen Principal */}
+            <div 
+              className="product-main-image-wrapper"
+              onClick={() => setIsModalOpen(true)} // NUEVO: Abre el modal al hacer click
+            >
+               <img 
+                 src={activeImage} 
+                 alt={nombre} 
+                 className="product-detail-image-main" 
+                 onError={(e) => {
+                   e.target.onerror = null;
+                   e.target.src = 'https://placehold.co/600x400?text=Error';
+                 }}
+               />
+            </div>
+          </div>
+
+          {/* INFO DEL PRODUCTO */}
+          <div className="product-detail-info">
+            <h1 className="product-detail-name">{nombre}</h1>
+            <div className="product-detail-price-box">
+              <span className="product-detail-price">${Number(price).toFixed(2)}</span>
+            </div>
+            <p className="product-detail-stock">
+              Stock: {stock > 0 ? `${stock} unidades disponibles` : 'Sin stock'}
+            </p>
+
+            <div className="product-detail-actions">
+              <input
+                id="product-detail-qty"
+                type="number"
+                min="1"
+                defaultValue="1"
+                className="product-detail-quantity"
+              />
+              <button
+                className="product-detail-buy-btn"
+                type="button"
+                onClick={handleDetailAddToCart}
+              >
+                Añadir al carrito
+              </button>
+            </div>
+
+            <div className="product-detail-extra">
+              <p><strong>Envío:</strong> {product.raw?.envioDescripcion || 'Envío estándar disponible.'}</p>
+              <p><strong>Garantía:</strong> {product.raw?.politicaDevolucion || 'Garantía directa de 1 año.'}</p>
+            </div>
+          </div>
         </div>
 
-        <div className="product-detail-info">
-          <h1 className="product-detail-name">{nombre}</h1>
-          <div className="product-detail-price-box">
-            <span className="product-detail-price">${price.toFixed(2)}</span>
-          </div>
-          <p className="product-detail-stock">
-            Stock: {stock > 0 ? `${stock} unidades disponibles` : 'Sin stock'}
-          </p>
-
-          <div className="product-detail-actions">
-            <input
-              id="product-detail-qty"
-              type="number"
-              min="1"
-              defaultValue="1"
-              className="product-detail-quantity"
-            />
+        {/* TABS */}
+        <div className="product-detail-tabs">
+          <div className="product-detail-tab-headers">
             <button
-              className="product-detail-buy-btn"
+              className={`producto-tab-header ${activeTab === 'descripcion' ? 'active' : ''}`}
               type="button"
-              onClick={handleDetailAddToCart}
+              onClick={() => setActiveTab('descripcion')}
             >
-              Añadir al carrito
+              Descripción
+            </button>
+            <button
+              className={`producto-tab-header ${activeTab === 'especificaciones' ? 'active' : ''}`}
+              type="button"
+              onClick={() => setActiveTab('especificaciones')}
+            >
+              Especificaciones
             </button>
           </div>
-
-          <div className="product-detail-extra">
-            <p>Envío: {product.raw.envioDescripcion || 'Envío estándar disponible.'}</p>
-            <p>Devolución: {product.raw.politicaDevolucion || 'Devoluciones dentro de 30 días.'}</p>
-          </div>
-
-
-        </div>
-      </div>
-
-      <div className="product-detail-tabs">
-        <div className="product-detail-tab-headers">
-          <button
-            className={`producto-tab-header ${activeTab === 'descripcion' ? 'active' : ''}`}
-            type="button"
-            onClick={() => setActiveTab('descripcion')}
-          >
-            Descripción
-          </button>
-          <button
-            className={`producto-tab-header ${activeTab === 'especificaciones' ? 'active' : ''}`}
-            type="button"
-            onClick={() => setActiveTab('especificaciones')}
-          >
-            Especificaciones
-          </button>
-        </div>
-        <div className="product-detail-tab-body">
-          <div className={`producto-tab-panel ${activeTab === 'descripcion' ? 'active' : ''}`}>
-            <p className="product-detail-description">{description}</p>
-          </div>
-          <div className={`producto-tab-panel ${activeTab === 'especificaciones' ? 'active' : ''}`}>
-            <table className="product-specs-table">
-              <tbody>
-                {specs.map(spec => (
-                  <tr key={spec.label}>
-                    <th>{spec.label}</th>
-                    <td>{spec.value}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="product-detail-tab-body">
+            <div className={`producto-tab-panel ${activeTab === 'descripcion' ? 'active' : ''}`}>
+              <p className="product-detail-description">{description}</p>
+            </div>
+            <div className={`producto-tab-panel ${activeTab === 'especificaciones' ? 'active' : ''}`}>
+              <table className="product-specs-table">
+                <tbody>
+                  {specs.map((spec, idx) => (
+                    <tr key={idx}>
+                      <th>{spec.label}</th>
+                      <td>{spec.value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* NUEVO: LIGHTBOX / MODAL DE ZOOM */}
+      {isModalOpen && (
+        <div 
+          className="lightbox-overlay" 
+          onClick={() => setIsModalOpen(false)} // Cierra al hacer click afuera
+        >
+          <div className="lightbox-content" onClick={e => e.stopPropagation()}>
+            <button 
+              className="lightbox-close" 
+              onClick={() => setIsModalOpen(false)}
+            >
+              ✕
+            </button>
+            <img 
+              src={activeImage} 
+              alt="Zoom Producto" 
+              className="lightbox-image" 
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 });
-
 
 // --- Componente Principal ---
 

@@ -1,27 +1,27 @@
 const { executeQuery } = require('../config/db');
 
 class CitaServicio {
-static async create(citaData) {
-    const {
-        servicio_id,
-        nombre_cliente,     
-        nombre,           
-        email_cliente,     
-        email,              
-        telefono_cliente,   
-        telefono,          
-        direccion_cliente,  
-        direccion,         
-        fecha_cita,       
-        fecha,          
-        descripcion_problema, 
-        descripcion,        
-        estado = 'pendiente',
-        estado_pago = 'pendiente',
-        orden_id = null
-    } = citaData;
+    static async create(citaData) {
+        const {
+            servicio_id,
+            nombre_cliente,
+            nombre,
+            email_cliente,
+            email,
+            telefono_cliente,
+            telefono,
+            direccion_cliente,
+            direccion,
+            fecha_cita,
+            fecha,
+            descripcion_problema,
+            descripcion,
+            estado = 'pendiente',
+            estado_pago = 'pendiente',
+            orden_id = null
+        } = citaData;
 
-    const query = `
+        const query = `
         INSERT INTO citas_servicios (
             servicio_id, nombre_cliente, email_cliente, telefono_cliente, 
             direccion_cliente, fecha_cita, descripcion_problema,
@@ -29,22 +29,22 @@ static async create(citaData) {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
-    const params = [
-        servicio_id,
-        nombre_cliente || nombre,         
-        email_cliente || email,             
-        telefono_cliente || telefono,      
-        direccion_cliente || direccion,     
-        fecha_cita || fecha,               
-        descripcion_problema || descripcion, 
-        estado,
-        estado_pago,
-        orden_id
-    ];
+        const params = [
+            servicio_id,
+            nombre_cliente || nombre,
+            email_cliente || email,
+            telefono_cliente || telefono,
+            direccion_cliente || direccion,
+            fecha_cita || fecha,
+            descripcion_problema || descripcion,
+            estado,
+            estado_pago,
+            orden_id
+        ];
 
-    const result = await executeQuery(query, params);
-    return { id: result.insertId, ...citaData };
-}
+        const result = await executeQuery(query, params);
+        return { id: result.insertId, ...citaData };
+    }
 
     static async findAll() {
         const query = `
@@ -77,6 +77,21 @@ static async create(citaData) {
         `;
         await executeQuery(query, [estadoPago, ordenId, id]);
         return this.findById(id);
+    }
+
+    static async actualizar(id,data){
+        const campos = Object.keys(data);
+        const columnas = campos.map(campo=>`${campo} = ?`).join(', ');
+        const valores = Object.values(data);
+
+        const result = await executeQuery(`UPDATE citas_servicios SET ${columnas} WHERE id= ?;`,[...valores,id])
+        return result.affectedRows > 0;
+    }
+
+    static async delete(id) {
+        const query = `DELETE FROM citas_servicios WHERE id = ?`;
+        const result = await executeQuery(query, [id]);
+        return result.affectedRows > 0;
     }
 }
 

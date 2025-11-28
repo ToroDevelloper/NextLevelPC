@@ -1,4 +1,5 @@
-<nav class="col-md-3 col-lg-2 d-md-block sidebar collapse" style="background: linear-gradient(180deg, #2c3e50 0%, #1a2530 100%); min-height: 100vh;">
+<nav class="col-md-3 col-lg-2 d-md-block sidebar collapse"
+    style="background: linear-gradient(180deg, #2c3e50 0%, #1a2530 100%); min-height: 100vh;">
     <div class="position-sticky pt-3">
         <div class="text-center mb-4">
             <h4 class="text-white">
@@ -7,35 +8,40 @@
             </h4>
             <p class="text-light small">Panel de Administración</p>
         </div>
-        
+
         <ul class="nav flex-column mb-4">
             <li class="nav-item mb-2">
-                <a class="nav-link text-white d-flex align-items-center <%= currentPage === 'productos' ? 'active-nav' : '' %>" 
-                   href="/productos">
+                <a class="nav-link text-white d-flex align-items-center <%= currentPage === 'dashboard' ? 'active-nav' : '' %>"
+                    href="/dashboard">
+                    <i class="fas fa-home me-3"></i>
+                    Dashboard
+                </a>
+            </li>
+            <li class="nav-item mb-2">
+                <a class="nav-link text-white d-flex align-items-center <%= currentPage === 'productos' ? 'active-nav' : '' %>"
+                    href="/productos">
                     <i class="fas fa-box me-3"></i>
                     Productos
                 </a>
             </li>
             <li class="nav-item mb-2">
-                <a class="nav-link text-white d-flex align-items-center <%= currentPage === 'ordenes' ? 'active-nav' : '' %>" 
-                   href="/ordenes">
+                <a class="nav-link text-white d-flex align-items-center <%= currentPage === 'ordenes' ? 'active-nav' : '' %>"
+                    href="/ordenes">
                     <i class="fas fa-shopping-cart me-3"></i>
                     Órdenes
                 </a>
             </li>
             <li class="nav-item mb-2">
-                <a class="nav-link text-white d-flex align-items-center <%= currentPage === 'dashboard' ? 'active-nav' : '' %>"
-                   href="/citas-servicios">
-                    <i class="fas fa-chart-line me-3"></i>
-                    Dashboard
+                <a class="nav-link text-white d-flex align-items-center <%= currentPage === 'users' ? 'active-nav' : '' %>"
+                    href="/usuarios">
+                    <i class="fas fa-users me-3"></i>
+                    Usuarios
                 </a>
             </li>
-        </ul>
-
-        <ul class="nav flex-column mt-auto px-3">
-            <li class="nav-item mt-3">
-                <button class="btn btn-outline-light w-100 d-flex align-items-center justify-content-center" onclick="backendLogout()">
-                    <i class="fas fa-sign-out-alt me-2"></i>
+            <li class="nav-item mb-2">
+                <button class="nav-link text-white d-flex align-items-center btn btn-link w-100 text-start"
+                    onclick="backendLogout()" style="text-decoration: none;">
+                    <i class="fas fa-sign-out-alt me-3"></i>
                     Cerrar sesión
                 </button>
             </li>
@@ -83,15 +89,17 @@
 
 <style>
     .active-nav {
-        background: rgba(255,255,255,0.2) !important;
+        background: rgba(255, 255, 255, 0.2) !important;
         border-radius: 8px;
         font-weight: bold;
     }
+
     .sidebar .nav-link {
         transition: all 0.3s ease;
     }
+
     .sidebar .nav-link:hover {
-        background: rgba(255,255,255,0.1);
+        background: rgba(255, 255, 255, 0.1);
         border-radius: 8px;
     }
 </style>

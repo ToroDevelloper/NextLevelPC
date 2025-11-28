@@ -64,6 +64,14 @@ class Usuarios {
         return result.affectedRows > 0;
     }
 
+    static async obtenerRoles(){
+        return await executeQuery(`
+    SELECT u.*, r.nombre AS rol
+    FROM usuarios u
+    LEFT JOIN roles r ON u.rol_id = r.id
+`);
+    }
+
     static async guardarRefreshToken(userId, token, expiresAt) {
     const result = await executeQuery(`
         INSERT INTO refresh_tokens (user_id, token, expires_at)

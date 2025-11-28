@@ -45,6 +45,20 @@ class CitaServicioService {
 
         return await CitaServicio.updateEstadoPago(id, estadoPago, ordenId);
     }
+
+    static async actualizar(id,data){
+        if(!id){
+            throw new Error('El ID de la cita es requerido')
+        }
+        return await CitaServicio.actualizar(id,data)
+    }
+
+    static async deleteCita(id) {
+        if (!id) {
+            throw new Error('El ID de la cita es requerido.');
+        }
+        return await CitaServicio.delete(id);
+    }
 }
 
 module.exports = CitaServicioService;

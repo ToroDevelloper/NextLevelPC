@@ -36,18 +36,30 @@ static async buscarPorNombre(query) {
     }
 
     static async obtenerPorId(id) {
-        const result = await executeQuery(`
+        const productRows = await executeQuery(`
             SELECT p.*, 
-                   ip.url AS imagen_principal
+                     c.nombre as categoria_nombre
             FROM productos p
-            LEFT JOIN imagenes_productos ip 
-              ON p.id = ip.producto_id 
-             AND ip.es_principal = 1
+            LEFT JOIN categorias c ON p.categoria_id = c.id
             WHERE p.id = ?
             LIMIT 1
         `, [id]);
-        return result.length > 0 ? result[0] : null;
-    }
+
+         if (productRows.length === 0) return null;
+        const producto = productRows[0];
+
+        const imagenesRows = await executeQuery(`
+            SELECT url, es_principal 
+            FROM imagenes_productos 
+            WHERE producto_id = ? 
+            ORDER BY es_principal DESC, id ASC
+        `, [id]);
+
+        producto.imagenes = imagenesRows; 
+        producto.imagen_principal = imagenesRows.length > 0 ? imagenesRows[0].url : null;
+
+    return producto;
+}
 
     static async obtenerPorCategoria(categoria_id) {
        const productos =  await executeQuery('SELECT * FROM productos WHERE categoria_id = ?', [categoria_id]);

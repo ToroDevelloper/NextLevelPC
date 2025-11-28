@@ -86,6 +86,14 @@ class UsuariosService {
         return await Usuarios.eliminar(id);
     }
 
+    static async obtenerRoles(){
+        const usuarios = await Usuarios.obtenerRoles();
+        if(!usuarios){
+            throw new Error('Ocurrio un errror al obtener los usuarios')
+        }
+        return usuarios;
+    }
+
     static async login(data) {
         const dto = new LoginDTO(data);
         const errores = dto.validate();
@@ -111,7 +119,7 @@ class UsuariosService {
         
         const accessToken = jwt.sign(payload, 
             process.env.JWT_ACCESS_SECRET || 'fallback_access_key', 
-            { expiresIn: '15m' } 
+            { expiresIn: '1h' } 
         );
 
         const REFRESH_TOKEN_EXPIRATION_DAYS = 7;
